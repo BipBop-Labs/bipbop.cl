@@ -21,11 +21,11 @@
         fill="#6cf09a" filter="url(#cursor-glow)">_</tspan></text>
 
   <!-- lede -->
-  <text x="88" y="430" font-family="'Instrument Serif', 'Times New Roman', serif"
-        font-size="48" fill="#d8d2c5">Software <tspan
-        font-style="italic" fill="#6cf09a">hecho con cariño</tspan>,</text>
-  <text x="88" y="490" font-family="'Instrument Serif', 'Times New Roman', serif"
-        font-size="48" fill="#d8d2c5">pensado contigo y construido a tu lado.</text>
+  <text x="88" y="430" font-family="'IBM Plex Sans', system-ui, sans-serif"
+        font-weight="600" font-size="42" fill="#f3eee5"><tspan
+        fill="#6cf09a">Software hecho con cariño</tspan>,</text>
+  <text x="88" y="482" font-family="'IBM Plex Sans', system-ui, sans-serif"
+        font-weight="600" font-size="42" fill="#f3eee5">pensado contigo y construido a tu lado.</text>
 
   <!-- meta strip -->
   <line x1="88" y1="558" x2="1112" y2="558" stroke="#2a2a30" stroke-width="1"/>
