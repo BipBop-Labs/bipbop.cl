@@ -1,15 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="BipBop Labs">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 400 400" role="img" aria-label="BipBop Labs">
   <title>BipBop Labs</title>
   <defs>
     <radialGradient id="glow" cx="78%" cy="14%" r="62%">
-      <stop offset="0%" stop-color="#6cf09a" stop-opacity="0.22"/>
-      <stop offset="100%" stop-color="#6cf09a" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#0e8a44" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#0e8a44" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <rect width="400" height="400" fill="#0e0e10"/>
+  <rect width="400" height="400" fill="#f3eee5"/>
   <rect width="400" height="400" fill="url(#glow)"/>
-  <text x="214" y="268" text-anchor="middle"
-        font-family="'Instrument Serif', 'Times New Roman', serif"
-        font-size="250" fill="#f3eee5"
-    >B<tspan font-style="italic" fill="#6cf09a">b</tspan><tspan fill="#6cf09a">_</tspan></text>
+  <image x="65" y="55" width="270" height="285" preserveAspectRatio="xMidYMid meet" xlink:href="../bipbop_icon.webp"/>
+  <rect x="170" y="350" width="60" height="8" rx="2" fill="#0e8a44"/>
 </svg>

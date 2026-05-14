@@ -1,31 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1584 396" role="img" aria-label="BipBop Labs">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1584 396" role="img" aria-label="BipBop Labs">
   <title>BipBop Labs</title>
   <defs>
-    <radialGradient id="glow-tr" cx="80%" cy="0%" r="70%">
-      <stop offset="0%" stop-color="#6cf09a" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#6cf09a" stop-opacity="0"/>
+    <radialGradient id="glow-tr" cx="55%" cy="0%" r="55%">
+      <stop offset="0%" stop-color="#0e8a44" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#0e8a44" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="glow-bl" cx="8%" cy="100%" r="55%">
-      <stop offset="0%" stop-color="#6cf09a" stop-opacity="0.10"/>
-      <stop offset="100%" stop-color="#6cf09a" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#0e8a44" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#0e8a44" stop-opacity="0"/>
     </radialGradient>
-    <pattern id="grain" width="3" height="3" patternUnits="userSpaceOnUse">
-      <rect width="3" height="1" fill="#ffffff" fill-opacity="0.012"/>
-    </pattern>
   </defs>
 
-  <rect width="1584" height="396" fill="#0e0e10"/>
+  <rect width="1584" height="396" fill="#f3eee5"/>
   <rect width="1584" height="396" fill="url(#glow-tr)"/>
   <rect width="1584" height="396" fill="url(#glow-bl)"/>
-  <rect width="1584" height="396" fill="url(#grain)"/>
 
-  <text x="1504" y="230" text-anchor="end"
-        font-family="'Instrument Serif', 'Times New Roman', serif"
-        font-size="168" fill="#f3eee5"
-    >Bip<tspan font-style="italic" fill="#6cf09a">Bop</tspan> Labs<tspan fill="#6cf09a">_</tspan></text>
+  <image x="970" y="138" width="110" height="200" preserveAspectRatio="xMidYMid meet" xlink:href="../bipbop_logo.webp"/>
 
-  <text x="1504" y="280" text-anchor="end"
+  <text x="950" y="218" text-anchor="end"
         font-family="'Instrument Serif', 'Times New Roman', serif"
-        font-style="italic" font-size="32" fill="#d8d2c5"
-    >thoughtful software for real people</text>
+        font-size="76" fill="#161513"
+    >Bip<tspan font-style="italic" fill="#0e8a44">Bop</tspan> Labs<tspan fill="#0e8a44">_</tspan></text>
+
+  <text x="950" y="262" text-anchor="end"
+        font-family="'Instrument Serif', 'Times New Roman', serif"
+        font-style="italic" font-size="22" fill="#4a4640"
+    >Software hecho con cari&#241;o,</text>
+  <text x="950" y="292" text-anchor="end"
+        font-family="'Instrument Serif', 'Times New Roman', serif"
+        font-style="italic" font-size="22" fill="#4a4640"
+    >pensado contigo y construido a tu lado.</text>
 </svg>

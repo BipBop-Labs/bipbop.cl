@@ -23,7 +23,8 @@
   <meta name="twitter:description" content="Thoughtful software, shaped with you and built by your side. A small studio for companies that care about the details.">
   <meta name="twitter:image" content="https://bipbop.cl/brand/og.png">
 
-  <link rel="icon" type="image/svg+xml" href="brand/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="brand/favicon.ico">
+  <link rel="apple-touch-icon" href="brand/social/github-avatar.png">
   <link rel="canonical" href="https://bipbop.cl">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -229,13 +230,24 @@
       100% { opacity: 1; clip-path: inset(0 0 0 0); transform: translateY(0); }
     }
     .wordmark {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: clamp(0.75rem, 1.6vw, 1.4rem);
       color: var(--text);
       width: 100%;
       max-width: 880px;
     }
+    .wordmark-logo {
+      display: block;
+      flex: 0 0 auto;
+      height: clamp(72px, 12vw, 132px);
+      width: auto;
+    }
+    [data-theme="dark"] .wordmark-logo { filter: invert(1); }
     .wordmark svg {
       display: block;
+      flex: 1 1 auto;
+      min-width: 0;
       width: 100%;
       height: auto;
       overflow: visible;
@@ -379,6 +391,14 @@
     }
 
     .services { margin-bottom: 5rem; }
+    .services-mascot {
+      display: block;
+      width: clamp(110px, 16vw, 170px);
+      height: auto;
+      margin: 0 auto 2rem;
+      opacity: 0.9;
+    }
+    [data-theme="dark"] .services-mascot { filter: invert(1); opacity: 0.85; }
     .service-prose {
       max-width: 62ch;
       font-size: 1.05rem;
@@ -523,6 +543,7 @@
     .meta a { color: var(--text); text-decoration: none; border-bottom: 1px dotted var(--dim); transition: all 0.2s; }
     .meta a:hover { color: var(--signal); border-bottom-color: var(--signal); }
 
+
     .contact {
       margin-top: 2rem;
       padding: 3rem 0 2rem;
@@ -649,6 +670,7 @@
 
   <section class="hero">
     <h1 class="wordmark" aria-label="BipBop Labs">
+      <img class="wordmark-logo" src="brand/bipbop_icon.webp" alt="" aria-hidden="true">
       <svg viewBox="0 0 640 140" role="img" aria-hidden="true">
         <text x="0" y="98"
               font-family="'Instrument Serif', 'Times New Roman', serif"
@@ -685,6 +707,8 @@
     <span data-i18n="en">what we do</span>
     <span data-i18n="es">qué hacemos</span>
   </div>
+
+  <img class="services-mascot" src="brand/bipbop_logo.webp" alt="" aria-hidden="true">
 
   <section class="services">
     <div class="service-prose">
