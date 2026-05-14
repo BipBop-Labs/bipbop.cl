@@ -99,11 +99,10 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--dim);
-      border-bottom: 1px solid var(--line);
-      background: var(--bg-blur);
-      backdrop-filter: blur(8px);
       z-index: 50;
+      pointer-events: none;
     }
+    .statusbar .right { pointer-events: auto; }
     .statusbar .left, .statusbar .right { display: flex; gap: 1.25rem; align-items: center; }
     .statusbar .dot {
       display: inline-block;
@@ -538,7 +537,6 @@
     @media (max-width: 720px) {
       main { padding: 6rem 1.25rem 5rem; }
       .statusbar { padding: 0.65rem 1rem; font-size: 0.6rem; }
-      .statusbar .hide-sm { display: none; }
       .services { grid-template-columns: 1fr; }
       .service { border-right: 0; border-bottom: 1px solid var(--line); }
       .service:last-child { border-bottom: 0; }
@@ -666,9 +664,7 @@
 </div>
 
 <div class="statusbar">
-  <div class="left">
-    <span class="hide-sm" id="clock">--:--</span>
-  </div>
+  <div class="left"></div>
   <div class="right">
     <button class="theme-toggle" id="theme-toggle" aria-label="toggle theme">
       <span class="theme-icon"></span>
@@ -855,18 +851,6 @@
 
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  const clockEl = document.getElementById('clock');
-  const tick = () => {
-    try {
-      const t = new Date().toLocaleTimeString('en-GB', {
-        timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit'
-      });
-      clockEl.textContent = t + ' SCL';
-    } catch(e) {
-      clockEl.textContent = new Date().toTimeString().slice(0,5);
-    }
-  };
-  tick(); setInterval(tick, 30000);
 </script>
 
 </body>
