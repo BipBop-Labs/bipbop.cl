@@ -15,8 +15,6 @@
   <rect width="1200" height="630" fill="url(#glow-tr)"/>
   <rect width="1200" height="630" fill="url(#glow-bl)"/>
 
-  <image x="780" y="180" width="180" height="320" preserveAspectRatio="xMidYMid meet" xlink:href="bipbop_logo.webp"/>
-
   <text x="760" y="320" text-anchor="end"
         font-family="'Instrument Serif', 'Times New Roman', serif"
         font-size="120" fill="#161513"
