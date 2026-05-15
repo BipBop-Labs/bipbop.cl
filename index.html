@@ -6,7 +6,7 @@
   <title>BipBop Labs · software hecho con cariño · Santiago, CL</title>
   <meta name="description" content="Software hecho con cariño, pensado contigo y construido a tu lado. Un estudio pequeño para empresas a las que les importan los detalles.">
   <meta name="author" content="Juan Vargas">
-  <meta name="theme-color" content="#f3eee5">
+  <meta name="theme-color" content="#f7f5f0">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
@@ -35,17 +35,47 @@
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg:     #f3eee5;
-      --bg-2:   #ebe5d7;
-      --line:   #d4ccba;
-      --text:   #161513;
-      --text-2: #4a4640;
-      --dim:    #8a8378;
-      --signal: #0e8a44;
-      --signal-soft: rgba(14, 138, 68, 0.09);
-      --signal-glow: rgba(14, 138, 68, 0.16);
-      --caution: #c84c4c;
-      --bg-blur: rgba(243, 238, 229, 0.75);
+      /* Neutrals — warm cream family */
+      --cream-50:  #faf9f5;
+      --cream-100: #f7f5f0;
+      --cream-200: #ede9e0;
+      --cream-300: #ddd7c8;
+      --cream-400: #a39d92;
+      --cream-600: #6b6862;
+      --cream-900: #161513;
+
+      /* Moss — success/positive */
+      --moss-500: #3d7a3a;
+      --moss-600: #2f5f2d;
+      --moss-100: #e3ebd9;
+
+      /* Clay — error/caution */
+      --clay-500: #b54836;
+      --clay-600: #8f3829;
+      --clay-100: #f2dcd4;
+
+      /* Surfaces */
+      --color-background:         var(--cream-100);
+      --color-background-subtle:  var(--cream-200);
+      --color-surface-raised:     var(--cream-50);
+      --color-border:             var(--cream-300);
+      --color-border-strong:      var(--cream-400);
+
+      /* Text */
+      --color-text-primary:       var(--cream-900);
+      --color-text-secondary:     var(--cream-600);
+      --color-text-tertiary:      var(--cream-400);
+      --color-text-inverse:       var(--cream-100);
+
+      /* Status */
+      --color-success:            var(--moss-500);
+      --color-success-hover:      var(--moss-600);
+      --color-success-subtle:     var(--moss-100);
+
+      --color-danger:             var(--clay-500);
+      --color-danger-hover:       var(--clay-600);
+      --color-danger-subtle:      var(--clay-100);
+
       --serif:  'Instrument Serif', 'Times New Roman', serif;
       --sans:   'IBM Plex Sans', system-ui, sans-serif;
       --mono:   'JetBrains Mono', 'SF Mono', Consolas, monospace;
@@ -56,8 +86,8 @@
     html, body { overflow-x: hidden; }
     body {
       position: relative;
-      background: var(--bg);
-      color: var(--text);
+      background: var(--color-background);
+      color: var(--color-text-primary);
       transition: background 0.3s ease, color 0.3s ease;
       font-family: var(--sans);
       font-weight: 300;
@@ -67,16 +97,6 @@
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
       position: relative;
-    }
-
-    body::before {
-      content: "";
-      position: fixed; inset: 0;
-      background:
-        radial-gradient(ellipse 70% 45% at 80% 0%, var(--signal-glow), transparent 65%);
-      opacity: 0.6;
-      pointer-events: none;
-      z-index: 0;
     }
 
     .statusbar {
@@ -90,7 +110,7 @@
       font-size: 0.68rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--dim);
+      color: var(--color-text-tertiary);
       z-index: 50;
       pointer-events: none;
     }
@@ -100,8 +120,8 @@
       display: inline-block;
       width: 6px; height: 6px;
       border-radius: 50%;
-      background: var(--signal);
-      box-shadow: 0 0 8px var(--signal);
+      background: var(--color-success);
+      box-shadow: 0 0 8px var(--color-success);
       margin-right: 0.45rem;
       animation: pulse 2.4s ease-in-out infinite;
     }
@@ -111,13 +131,13 @@
     }
     .lang-toggle {
       display: flex; gap: 0;
-      border: 1px solid var(--line);
+      border: 1px solid var(--color-border);
       border-radius: 2px;
       overflow: hidden;
     }
     .lang-toggle button {
       background: none; border: 0;
-      color: var(--dim);
+      color: var(--color-text-tertiary);
       font-family: var(--mono);
       font-size: 0.65rem;
       letter-spacing: 0.1em;
@@ -125,10 +145,10 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-    .lang-toggle button:hover { color: var(--text); }
+    .lang-toggle button:hover { color: var(--color-text-primary); }
     .lang-toggle button.on {
-      background: var(--signal-soft);
-      color: var(--signal);
+      background: var(--color-success-subtle);
+      color: var(--color-success);
     }
 
     main {
@@ -157,7 +177,7 @@
     .hero {
       position: relative;
       min-height: 100vh;
-      margin-bottom: 5rem;
+      margin-bottom: 0;
       padding-bottom: 2rem;
       display: flex;
       flex-direction: column;
@@ -194,7 +214,7 @@
       display: flex;
       align-items: center;
       gap: clamp(0.75rem, 1.6vw, 1.4rem);
-      color: var(--text);
+      color: var(--color-text-primary);
       width: 100%;
       max-width: 880px;
     }
@@ -203,7 +223,7 @@
       flex: 0 0 auto;
       height: clamp(72px, 12vw, 132px);
       aspect-ratio: 3416 / 3512;
-      background-color: var(--text);
+      background-color: var(--color-text-primary);
       -webkit-mask: url("brand/bipbop_icon.webp") no-repeat center / contain;
               mask: url("brand/bipbop_icon.webp") no-repeat center / contain;
     }
@@ -216,11 +236,11 @@
       overflow: visible;
       fill: currentColor;
     }
-    .wordmark svg .ital { fill: var(--signal); }
+    .wordmark svg .ital { fill: var(--color-success); }
     .wordmark svg .cursor {
-      fill: var(--signal);
+      fill: var(--color-success);
       animation: blink 1.1s steps(1) infinite;
-      filter: drop-shadow(0 0 12px var(--signal));
+      filter: drop-shadow(0 0 12px var(--color-success));
     }
     @keyframes blink {
       0%, 50% { opacity: 1; }
@@ -233,15 +253,15 @@
       font-size: clamp(1.25rem, 2.4vw, 1.6rem);
       line-height: 1.4;
       max-width: 42ch;
-      color: var(--text);
+      color: var(--color-text-primary);
       margin-top: 2rem;
       opacity: 0;
       animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s forwards;
-      text-shadow: 0 0 14px var(--bg), 0 0 4px var(--bg);
+      text-shadow: 0 0 14px var(--color-background), 0 0 4px var(--color-background);
     }
     .lede em {
       font-style: normal;
-      color: var(--signal);
+      color: var(--color-success);
     }
 
     .sub {
@@ -249,19 +269,19 @@
       font-weight: 500;
       font-size: 1rem;
       line-height: 1.7;
-      color: var(--text);
+      color: var(--color-text-primary);
       max-width: 56ch;
       margin-top: 1.5rem;
       opacity: 0;
       animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s forwards;
-      text-shadow: 0 0 10px var(--bg), 0 0 3px var(--bg);
+      text-shadow: 0 0 10px var(--color-background), 0 0 3px var(--color-background);
     }
 
     .currently {
       font-family: var(--sans);
       font-size: 0.85rem;
       line-height: 1.5;
-      color: var(--dim);
+      color: var(--color-text-tertiary);
       max-width: 56ch;
       margin-top: 1.25rem;
       opacity: 0;
@@ -272,8 +292,8 @@
       margin-right: 0.4rem;
       padding: 0.05rem 0.45rem;
       border-radius: 999px;
-      background: var(--signal-soft);
-      color: var(--signal);
+      background: var(--color-success-subtle);
+      color: var(--color-success);
       font-size: 0.7rem;
       font-weight: 500;
       letter-spacing: 0.04em;
@@ -285,8 +305,8 @@
       width: 5px;
       height: 5px;
       border-radius: 50%;
-      background: var(--signal);
-      box-shadow: 0 0 6px var(--signal);
+      background: var(--color-success);
+      box-shadow: 0 0 6px var(--color-success);
       margin-right: 0.35rem;
       vertical-align: 0.08em;
       animation: pulse 2s ease-in-out infinite;
@@ -309,26 +329,21 @@
       align-items: center;
       gap: 0.55rem;
       padding: 0.7rem 1.05rem;
-      border: 1px solid var(--line);
+      border: 1px solid var(--color-border);
       border-radius: 2px;
-      color: var(--text);
+      background: color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+      color: var(--color-text-primary);
       font-family: var(--sans);
       font-size: 0.95rem;
       font-weight: 600;
       text-decoration: none;
-      transition: all 0.2s;
+      cursor: pointer;
     }
     .cta.primary {
-      border-color: var(--signal);
-      color: var(--signal);
-      background: var(--signal-soft);
+      border-color: var(--color-success);
+      color: var(--color-success);
+      background: color-mix(in srgb, var(--color-success) 12%, transparent);
       font-weight: 700;
-    }
-    .cta:hover {
-      color: var(--signal);
-      border-color: var(--signal);
-      background: var(--signal-soft);
-      box-shadow: 0 0 20px var(--signal-glow);
     }
 
     @keyframes rise {
@@ -344,15 +359,15 @@
       font-family: var(--sans);
       font-size: 0.85rem;
       font-weight: 500;
-      color: var(--dim);
+      color: var(--color-text-tertiary);
     }
     .section-head::after {
       content: "";
       flex: 1;
       height: 1px;
-      background: var(--line);
+      background: var(--color-border);
     }
-    .section-head.signal { color: var(--signal); }
+    .section-head.signal { color: var(--color-success); }
 
     .services { margin-bottom: 5rem; }
     .service-prose {
@@ -381,17 +396,17 @@
     .service-prose {
       font-size: 1.05rem;
       line-height: 1.7;
-      color: var(--text);
+      color: var(--color-text-primary);
     }
     .service-copy p + p { margin-top: 1.25rem; }
     .service-do span {
-      color: var(--signal);
+      color: var(--color-success);
       font-weight: 600;
       margin-right: 0.35rem;
     }
-    .service-dont { color: var(--text-2); }
+    .service-dont { color: var(--color-text-secondary); }
     .service-dont span {
-      color: var(--caution);
+      color: var(--color-danger);
       font-weight: 600;
       margin-right: 0.35rem;
     }
@@ -404,16 +419,16 @@
       gap: 1.75rem;
       align-items: start;
       padding: 1.75rem 0;
-      border-top: 1px solid var(--line);
+      border-top: 1px solid var(--color-border);
       transition: padding 0.3s ease;
     }
-    .project:last-child { border-bottom: 1px solid var(--line); }
+    .project:last-child { border-bottom: 1px solid var(--color-border); }
     .project:hover { padding-left: 0.75rem; }
 
     .project-logo {
       width: 72px; height: 72px;
-      background: var(--bg-2);
-      border: 1px solid var(--line);
+      background: var(--color-background-subtle);
+      border: 1px solid var(--color-border);
       border-radius: 4px;
       display: flex;
       align-items: center;
@@ -430,7 +445,7 @@
       line-height: 1.2;
       margin-bottom: 0.35rem;
       font-weight: 500;
-      color: var(--text);
+      color: var(--color-text-primary);
     }
     .project-name {
       font-family: var(--mono);
@@ -440,9 +455,9 @@
       margin-bottom: 0.85rem;
     }
     .project-name a {
-      color: var(--signal);
+      color: var(--color-success);
       text-decoration: none;
-      background-image: linear-gradient(var(--signal), var(--signal));
+      background-image: linear-gradient(var(--color-success), var(--color-success));
       background-size: 0% 1px;
       background-position: 0 100%;
       background-repeat: no-repeat;
@@ -456,21 +471,21 @@
       width: 0.7em;
       height: 0.7em;
       margin-left: 0.4em;
-      background-color: var(--signal);
+      background-color: var(--color-success);
       -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M7 17L17 7'/><path d='M8 7h9v9'/></svg>") no-repeat center / contain;
               mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M7 17L17 7'/><path d='M8 7h9v9'/></svg>") no-repeat center / contain;
     }
     .project-desc {
       font-size: 0.95rem;
       line-height: 1.6;
-      color: var(--text-2);
+      color: var(--color-text-secondary);
       max-width: 56ch;
     }
     .project-date {
       font-family: var(--mono);
       font-size: 0.68rem;
       letter-spacing: 0.1em;
-      color: var(--dim);
+      color: var(--color-text-tertiary);
       white-space: nowrap;
       padding-top: 0.5rem;
     }
@@ -488,16 +503,16 @@
     .about-body {
       font-size: 1rem;
       line-height: 1.7;
-      color: var(--text-2);
+      color: var(--color-text-secondary);
       max-width: 56ch;
     }
     .about-body a {
-      color: var(--text);
+      color: var(--color-text-primary);
       text-decoration: none;
-      border-bottom: 1px dotted var(--dim);
+      border-bottom: 1px dotted var(--color-text-tertiary);
       transition: all 0.2s;
     }
-    .about-body a:hover { color: var(--signal); border-bottom-color: var(--signal); }
+    .about-body a:hover { color: var(--color-success); border-bottom-color: var(--color-success); }
     .about-body p + p { margin-top: 1rem; }
 
     .meta {
@@ -513,24 +528,24 @@
       align-items: baseline;
       gap: 1rem;
       padding: 0.65rem 0;
-      border-bottom: 1px dashed var(--line);
+      border-bottom: 1px dashed var(--color-border);
     }
     .meta > div:last-child { border-bottom: 0; }
     .meta dt {
       font-size: 0.62rem;
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: var(--dim);
+      color: var(--color-text-tertiary);
     }
-    .meta dd { color: var(--text); text-align: right; }
-    .meta a { color: var(--text); text-decoration: none; border-bottom: 1px dotted var(--dim); transition: all 0.2s; }
-    .meta a:hover { color: var(--signal); border-bottom-color: var(--signal); }
+    .meta dd { color: var(--color-text-primary); text-align: right; }
+    .meta a { color: var(--color-text-primary); text-decoration: none; border-bottom: 1px dotted var(--color-text-tertiary); transition: all 0.2s; }
+    .meta a:hover { color: var(--color-success); border-bottom-color: var(--color-success); }
 
 
     .contact {
       margin-top: 2rem;
       padding: 3rem 0 2rem;
-      border-top: 1px solid var(--line);
+      border-top: 1px solid var(--color-border);
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 3rem;
@@ -541,35 +556,35 @@
       font-weight: 400;
       font-size: clamp(1.3rem, 2.6vw, 1.8rem);
       line-height: 1.3;
-      color: var(--text);
+      color: var(--color-text-primary);
     }
-    .contact-prompt em { font-style: normal; color: var(--signal); }
+    .contact-prompt em { font-style: normal; color: var(--color-success); }
     .contact-link {
       font-family: var(--mono);
       font-size: 1rem;
-      color: var(--text);
+      color: var(--color-text-primary);
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       gap: 0.6rem;
       padding: 0.9rem 1.2rem;
-      border: 1px solid var(--line);
+      border: 1px solid var(--color-border);
       border-radius: 2px;
       transition: all 0.25s;
       justify-self: end;
     }
     .contact-link:hover {
-      border-color: var(--signal);
-      color: var(--signal);
-      background: var(--signal-soft);
-      box-shadow: 0 0 24px var(--signal-glow);
+      border-color: var(--color-success);
+      color: var(--color-success);
+      background: var(--color-success-subtle);
+      box-shadow: 0 0 24px var(--color-success);
     }
     .contact-link::before {
       content: "";
       display: inline-block;
       width: 1em;
       height: 1em;
-      background-color: var(--signal);
+      background-color: var(--color-success);
       -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14'/><path d='M12 5l7 7-7 7'/></svg>") no-repeat center / contain;
               mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14'/><path d='M12 5l7 7-7 7'/></svg>") no-repeat center / contain;
     }
@@ -577,7 +592,7 @@
     footer {
       margin-top: 4rem;
       padding-top: 1.5rem;
-      border-top: 1px solid var(--line);
+      border-top: 1px solid var(--color-border);
       display: flex;
       justify-content: space-between;
       flex-wrap: wrap;
@@ -585,14 +600,14 @@
       font-family: var(--mono);
       font-size: 0.7rem;
       letter-spacing: 0.06em;
-      color: var(--dim);
+      color: var(--color-text-tertiary);
     }
     footer a {
-      color: var(--text-2);
+      color: var(--color-text-secondary);
       text-decoration: none;
       transition: color 0.2s;
     }
-    footer a:hover { color: var(--signal); }
+    footer a:hover { color: var(--color-success); }
     footer .right { display: flex; gap: 1.25rem; }
 
     [data-i18n] { display: none; }
@@ -609,7 +624,7 @@
       main { padding: 0 1.25rem 5rem; }
       .statusbar { padding: 0.65rem 1rem; font-size: 0.6rem; }
       .services { grid-template-columns: 1fr; }
-      .service { border-right: 0; border-bottom: 1px solid var(--line); }
+      .service { border-right: 0; border-bottom: 1px solid var(--color-border); }
       .service:last-child { border-bottom: 0; }
       .about { grid-template-columns: 1fr; gap: 2rem; }
       .project { grid-template-columns: 56px 1fr; gap: 1rem; }
@@ -654,7 +669,7 @@
       <svg viewBox="0 0 640 140" role="img" aria-hidden="true">
         <text x="0" y="98"
               font-family="'Instrument Serif', 'Times New Roman', serif"
-              font-size="108">Bip<tspan class="ital" font-style="italic">Bop</tspan> Labs<tspan class="cursor">_</tspan></text>
+              font-size="108">Bip<tspan class="ital">Bop</tspan> Labs<tspan class="cursor">_</tspan></text>
       </svg>
     </h1>
 
@@ -685,7 +700,7 @@
 
   <div class="section-head signal" id="what-we-do">
     <span data-i18n="en">What we do</span>
-    <span data-i18n="es">qué hacemos</span>
+    <span data-i18n="es">Qué hacemos</span>
   </div>
 
   <section class="services">
@@ -694,8 +709,8 @@
         <p class="service-do" data-i18n="en"><span>What we do.</span> We figure out with you what needs to be built. We build it. And we stay close until it actually works.</p>
         <p class="service-do" data-i18n="es"><span>Lo que hacemos.</span> Pensamos contigo qué hay que construir. Lo construimos. Y nos quedamos cerca hasta que de verdad funcione.</p>
 
-        <p class="service-dont" data-i18n="en"><span>what we DON'T do.</span> We don't execute tickets without understanding what's behind them. We don't build in the dark and deliver only at the end. We don't take every project that walks in.</p>
-        <p class="service-dont" data-i18n="es"><span>Lo que NO hacemos.</span> No ejecutamos tickets sin entender qué hay detrás. No construimos a ciegas y entregamos al final. No tomamos cualquier proyecto que llegue.</p>
+        <p class="service-dont" data-i18n="en"><span>What we don't do.</span> We don't execute tickets without understanding what's behind them. We don't build in the dark and deliver only at the end. We don't take every project that walks in.</p>
+        <p class="service-dont" data-i18n="es"><span>Lo que no hacemos.</span> No ejecutamos tickets sin entender qué hay detrás. No construimos a ciegas y entregamos al final. No tomamos cualquier proyecto que llegue.</p>
       </div>
       <span class="services-mascot" aria-hidden="true"></span>
     </div>
@@ -703,8 +718,8 @@
 
   <section class="projects" id="work">
     <div class="section-head">
-      <span data-i18n="en">things we've made</span>
-      <span data-i18n="es">cosas que hemos hecho</span>
+      <span data-i18n="en">Things we've made</span>
+      <span data-i18n="es">Cosas que hemos hecho</span>
     </div>
 
     <article class="project">
@@ -744,8 +759,8 @@
   <section class="about">
     <div>
       <div class="section-head">
-        <span data-i18n="en">who's behind this</span>
-        <span data-i18n="es">quiénes estamos detrás</span>
+        <span data-i18n="en">Who's behind this</span>
+        <span data-i18n="es">Quiénes estamos detrás</span>
       </div>
       <div class="about-body" data-i18n="en">
         <p>BipBop Labs is a small studio based in Santiago, Chile. We work mostly with Chilean companies, and the projects we take on usually live somewhere between AI, internal tools, and the web.</p>
@@ -759,18 +774,18 @@
 
     <aside>
       <div class="section-head">
-        <span data-i18n="en">say hi</span>
-        <span data-i18n="es">saluda</span>
+        <span data-i18n="en">Say hi</span>
+        <span data-i18n="es">Saluda</span>
       </div>
       <dl class="meta">
         <div>
-          <dt data-i18n="en">based in</dt>
-          <dt data-i18n="es">desde</dt>
+          <dt data-i18n="en">Based in</dt>
+          <dt data-i18n="es">Desde</dt>
           <dd>Santiago, Chile</dd>
         </div>
         <div>
-          <dt data-i18n="en">contact</dt>
-          <dt data-i18n="es">contacto</dt>
+          <dt data-i18n="en">Contact</dt>
+          <dt data-i18n="es">Contacto</dt>
           <dd><a href="mailto:juan@bipbop.cl">juan@bipbop.cl</a></dd>
         </div>
       </dl>
