@@ -6,7 +6,7 @@
   <title>BipBop Labs · software hecho con cariño · Santiago, CL</title>
   <meta name="description" content="Software hecho con cariño, pensado contigo y construido a tu lado. Un estudio pequeño para empresas a las que les importan los detalles.">
   <meta name="author" content="Juan Vargas">
-  <meta name="theme-color" content="#0e0e10">
+  <meta name="theme-color" content="#f3eee5">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
@@ -35,22 +35,6 @@
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg:     #0e0e10;
-      --bg-2:   #16161a;
-      --line:   #2a2a30;
-      --text:   #f3eee5;
-      --text-2: #d8d2c5;
-      --dim:    #6b6b74;
-      --signal: #6cf09a;
-      --signal-soft: rgba(108, 240, 154, 0.12);
-      --signal-glow: rgba(108, 240, 154, 0.16);
-      --caution: #ff8a8a;
-      --bg-blur: rgba(14, 14, 16, 0.7);
-      --serif:  'Instrument Serif', 'Times New Roman', serif;
-      --sans:   'IBM Plex Sans', system-ui, sans-serif;
-      --mono:   'JetBrains Mono', 'SF Mono', Consolas, monospace;
-    }
-    :root[data-theme="light"] {
       --bg:     #f3eee5;
       --bg-2:   #ebe5d7;
       --line:   #d4ccba;
@@ -62,6 +46,9 @@
       --signal-glow: rgba(14, 138, 68, 0.16);
       --caution: #c84c4c;
       --bg-blur: rgba(243, 238, 229, 0.75);
+      --serif:  'Instrument Serif', 'Times New Roman', serif;
+      --sans:   'IBM Plex Sans', system-ui, sans-serif;
+      --mono:   'JetBrains Mono', 'SF Mono', Consolas, monospace;
     }
 
     html { scroll-behavior: smooth; }
@@ -122,27 +109,6 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.35; }
     }
-    .theme-toggle {
-      background: none;
-      border: 1px solid var(--line);
-      border-radius: 2px;
-      width: 26px; height: 26px;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--dim);
-      cursor: pointer;
-      font-size: 0.7rem;
-      transition: all 0.2s;
-    }
-    .theme-toggle:hover { color: var(--signal); border-color: var(--signal); }
-    .theme-icon {
-      display: block;
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      background: var(--dim);
-      transition: all 0.2s;
-    }
-    .theme-toggle:hover .theme-icon { background: var(--signal); }
-    :root[data-theme="light"] .theme-icon { background: var(--signal); }
     .lang-toggle {
       display: flex; gap: 0;
       border: 1px solid var(--line);
@@ -186,11 +152,6 @@
       mix-blend-mode: multiply;
       display: block;
     }
-    [data-theme="dark"] .machine-rail {
-      filter: invert(1);
-      opacity: 0.32;
-      mix-blend-mode: screen;
-    }
     @media (max-width: 1100px) { .machine-rail { display: none; } }
 
     .hero {
@@ -218,8 +179,6 @@
       pointer-events: none;
       z-index: 0;
     }
-    [data-theme="dark"] .hero::before { filter: invert(1); opacity: 0.2; }
-
     .brand {
       display: table;
       opacity: 0;
@@ -419,7 +378,6 @@
         width: 9rem;
       }
     }
-    [data-theme="dark"] .services-mascot { filter: invert(1); opacity: 0.85; }
     .service-prose {
       font-size: 1.05rem;
       line-height: 1.7;
@@ -681,9 +639,6 @@
 <div class="statusbar">
   <div class="left"></div>
   <div class="right">
-    <button class="theme-toggle" id="theme-toggle" aria-label="toggle theme">
-      <span class="theme-icon"></span>
-    </button>
     <div class="lang-toggle">
       <button data-lang="en">EN</button>
       <button data-lang="es">ES</button>
@@ -854,17 +809,6 @@
     btn.onclick = () => setLang(btn.dataset.lang);
   });
   setLang(localStorage.getItem('lang') || (navigator.language.startsWith('es') ? 'es' : 'en'));
-
-  const setTheme = (theme) => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  };
-  const savedTheme = localStorage.getItem('theme') ||
-    (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-  setTheme(savedTheme);
-  document.getElementById('theme-toggle').onclick = () => {
-    setTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
-  };
 
   document.getElementById('year').textContent = new Date().getFullYear();
 
