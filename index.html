@@ -451,9 +451,13 @@
     .featured-client {
       font-family: var(--serif);
       font-size: 1rem;
-      
       color: var(--color-text-tertiary);
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      line-height: 1.35;
     }
+    .featured-client-name { color: var(--color-text-secondary); }
     .featured-desc {
       font-family: var(--serif);
       font-size: 1.25rem;
@@ -846,7 +850,10 @@
       <div class="featured-body">
         <div class="featured-head">
           <div class="featured-logo"><img src="brand/projects/revi/revi-logo.svg" alt="Revi"></div>
-          <div class="featured-client">Cámara Chilena de la Construcción · 2025 → <span data-i18n="en">present</span><span data-i18n="es">actualidad</span></div>
+          <div class="featured-client">
+            <span class="featured-client-name">Cámara Chilena de la Construcción</span>
+            <span class="featured-client-date">2025 → <span data-i18n="en">present</span><span data-i18n="es">actualidad</span></span>
+          </div>
         </div>
 
         <p class="featured-desc" data-i18n="en">An AI helper that makes building permits in Chile far less painful. It reads architectural drawings and paperwork, then walks applicants and city reviewers through the regulations together. Live at <a class="featured-inline-link" href="https://app.ia-revi.cl/" target="_blank" rel="noopener">app.ia-revi.cl</a>.</p>
