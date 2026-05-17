@@ -1,15 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BipBop Labs · software hecho con cariño · Santiago, CL</title>
-  <meta name="description" content="Software hecho con cariño, pensado contigo y construido a tu lado. Un estudio pequeño para empresas a las que les importan los detalles.">
+  <title>BipBop Labs · Software con IA · Santiago, CL</title>
+  <meta name="description" content="BipBop Labs es un estudio chileno de software con IA. Software hecho con cariño en Santiago.">
+  <meta name="keywords" content="BipBop Labs, software con IA Chile, Juan Vargas, Santiago Chile, estudio software, Revi, Revi CChC, qué es Revi, ia-revi, app.ia-revi.cl, Cámara Chilena de la Construcción, permisos de edificación Chile, Clara Revi, Norman Revi, asistente IA construcción, DOM Chile">
   <meta name="author" content="Juan Vargas">
   <meta name="theme-color" content="#f7f5f0">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BipBop Labs">
   <meta property="og:title" content="BipBop Labs">
   <meta property="og:description" content="Software hecho con cariño, pensado contigo y construido a tu lado. Un estudio pequeño para empresas a las que les importan los detalles.">
   <meta property="og:url" content="https://bipbop.cl">
@@ -26,6 +28,96 @@
   <link rel="icon" type="image/x-icon" href="brand/favicon.ico">
   <link rel="apple-touch-icon" href="brand/social/github-avatar.png">
   <link rel="canonical" href="https://bipbop.cl">
+
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
+  <link rel="alternate" hreflang="es-CL" href="https://bipbop.cl/">
+  <link rel="alternate" hreflang="en" href="https://bipbop.cl/">
+  <link rel="alternate" hreflang="x-default" href="https://bipbop.cl/">
+
+  <!-- Structured data: Organization + Revi software + FAQ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://bipbop.cl/#org",
+        "name": "BipBop Labs",
+        "url": "https://bipbop.cl",
+        "logo": "https://bipbop.cl/brand/og.png",
+        "email": "juan@bipbop.cl",
+        "description": "Estudio de software chileno especializado en sistemas con IA, herramientas internas y plataformas operacionales.",
+        "founder": {
+          "@type": "Person",
+          "name": "Juan Vargas",
+          "url": "https://v4rgas.com",
+          "sameAs": ["https://github.com/v4rgas", "https://linkedin.com/in/v4rgas"]
+        },
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Santiago",
+          "addressCountry": "CL"
+        },
+        "sameAs": ["https://github.com/v4rgas", "https://linkedin.com/in/v4rgas"]
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://bipbop.cl/#revi",
+        "name": "Revi",
+        "alternateName": ["Revi CChC", "ia-revi", "Revi IA"],
+        "url": "https://app.ia-revi.cl/",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "description": "Revi es un asistente con inteligencia artificial que facilita los permisos de edificación en Chile. Lee planos arquitectónicos y documentos, y guía a solicitantes y a revisores de las Direcciones de Obras Municipales (DOM) por la normativa. Cuenta con dos asistentes: Clara, para solicitantes, y Norman, para revisores municipales.",
+        "publisher": {
+          "@type": "Organization",
+          "name": "Cámara Chilena de la Construcción",
+          "alternateName": "CChC",
+          "url": "https://www.cchc.cl"
+        },
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CLP" },
+        "areaServed": { "@type": "Country", "name": "Chile" }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "¿Qué es Revi?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Revi es un asistente con inteligencia artificial creado para la Cámara Chilena de la Construcción (CChC) que hace mucho menos doloroso obtener permisos de edificación en Chile. Lee planos y documentos, y guía a solicitantes y a revisores municipales por la normativa. Está disponible en app.ia-revi.cl."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "¿Dónde se usa Revi?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Revi está en producción en 11 municipios de Chile: Independencia, Maipú, Providencia, Puerto Montt, Aysén, Valdivia, Puerto Varas, Vitacura, Viña del Mar, Renca y Rancagua."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "¿Cuánto cuesta Revi?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Revi es gratuito para todos los usuarios. Actualmente solo se apoya a las municipalidades con convenio con la Cámara Chilena de la Construcción (CChC)."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "¿Quiénes son Clara y Norman?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Clara y Norman son los dos asistentes de Revi. Clara ayuda a los solicitantes de permisos de edificación, y Norman ayuda a los revisores de las Direcciones de Obras Municipales (DOM) a revisar expedientes contra la normativa."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -82,9 +174,7 @@
       --color-danger-hover:       var(--clay-600);
       --color-danger-subtle:      var(--clay-100);
 
-      --serif:  'IBM Plex Sans', system-ui, sans-serif;
-      --sans:   'IBM Plex Sans', system-ui, sans-serif;
-      --mono:   'IBM Plex Sans', system-ui, sans-serif;
+      --font:   'IBM Plex Sans', system-ui, sans-serif;
     }
 
     html { scroll-behavior: smooth; }
@@ -94,15 +184,13 @@
       position: relative;
       background: var(--color-background);
       color: var(--color-text-primary);
-      transition: background 0.3s ease, color 0.3s ease;
-      font-family: var(--serif);
+      font-family: var(--font);
       font-weight: 300;
       font-size: 16px;
       line-height: 1.6;
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
-      position: relative;
     }
 
     .statusbar {
@@ -112,7 +200,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 0.7rem 1.5rem;
-      font-family: var(--serif);
+      font-family: var(--font);
       font-size: 0.68rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -144,7 +232,7 @@
     .lang-toggle button {
       background: none; border: 0;
       color: var(--color-text-tertiary);
-      font-family: var(--serif);
+      font-family: var(--font);
       font-size: 0.65rem;
       letter-spacing: 0.1em;
       padding: 0.25rem 0.55rem;
@@ -254,7 +342,7 @@
     }
 
     .lede {
-      font-family: var(--serif);
+      font-family: var(--font);
       font-weight: 600;
       font-size: clamp(1.25rem, 2.4vw, 1.6rem);
       line-height: 1.4;
@@ -271,7 +359,7 @@
     }
 
     .sub {
-      font-family: var(--serif);
+      font-family: var(--font);
       font-weight: 500;
       font-size: 1rem;
       line-height: 1.7;
@@ -284,7 +372,7 @@
     }
 
     .currently {
-      font-family: var(--serif);
+      font-family: var(--font);
       font-size: 0.85rem;
       line-height: 1.5;
       color: var(--color-text-tertiary);
@@ -317,10 +405,6 @@
       vertical-align: 0.08em;
       animation: pulse 2s ease-in-out infinite;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.45; }
-    }
 
     .cta-row {
       display: flex;
@@ -339,7 +423,7 @@
       border-radius: 2px;
       background: color-mix(in srgb, var(--color-text-primary) 6%, transparent);
       color: var(--color-text-primary);
-      font-family: var(--serif);
+      font-family: var(--font);
       font-size: 0.95rem;
       font-weight: 600;
       text-decoration: none;
@@ -362,7 +446,7 @@
       align-items: center;
       gap: 1rem;
       margin-bottom: 2.5rem;
-      font-family: var(--serif);
+      font-family: var(--font);
       font-size: 0.85rem;
       font-weight: 500;
       color: var(--color-text-tertiary);
@@ -455,7 +539,7 @@
       display: block;
     }
     .featured-client {
-      font-family: var(--serif);
+      font-family: var(--font);
       font-size: 1rem;
       color: var(--color-text-tertiary);
       display: flex;
@@ -465,7 +549,7 @@
     }
     .featured-client-name { color: var(--color-text-secondary); }
     .featured-desc {
-      font-family: var(--serif);
+      font-family: var(--font);
       font-size: 1.25rem;
       line-height: 1.55;
       color: var(--color-text-primary);
@@ -479,13 +563,23 @@
       transition: opacity 0.2s;
     }
     .featured-inline-link:hover { opacity: 0.7; }
+
+    .featured-cta {
+      color: var(--color-success);
+      font-family: var(--font);
+      font-size: 1rem;
+      text-decoration: none;
+      border-bottom: 1px solid var(--color-success);
+      transition: opacity 0.2s;
+    }
+    .featured-cta:hover { opacity: 0.7; }
     .featured-meta {
       margin-top: 2rem;
       padding-top: 1.5rem;
       border-top: 1px solid var(--color-border);
     }
     .featured-meta-label {
-      font-family: var(--serif);
+      font-family: var(--font);
       
       font-size: 1rem;
       color: var(--color-text-tertiary);
@@ -529,96 +623,15 @@
       display: block;
     }
     .assistant-name {
-      font-family: var(--serif);
+      font-family: var(--font);
       font-size: 1.05rem;
       color: var(--color-text-primary);
     }
     .assistant-role {
-      font-family: var(--serif);
+      font-family: var(--font);
       
       font-size: 0.9rem;
       color: var(--color-text-tertiary);
-    }
-
-    .project {
-      display: grid;
-      grid-template-columns: 72px 1fr auto;
-      gap: 1.75rem;
-      align-items: start;
-      padding: 1.75rem 0;
-      border-top: 1px solid var(--color-border);
-      transition: padding 0.3s ease;
-    }
-    .project:last-child { border-bottom: 1px solid var(--color-border); }
-    .project:hover { padding-left: 0.75rem; }
-
-    .project-logo {
-      width: 72px; height: 72px;
-      background: var(--color-background-subtle);
-      border: 1px solid var(--color-border);
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      padding: 6px;
-    }
-    .project-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
-
-    .project-body { min-width: 0; }
-    .project-client {
-      font-family: var(--serif);
-      font-size: 1.25rem;
-      line-height: 1.2;
-      margin-bottom: 0.35rem;
-      font-weight: 500;
-      color: var(--color-text-primary);
-    }
-    .project-name {
-      font-family: var(--serif);
-      font-size: 0.72rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      margin-bottom: 0.85rem;
-    }
-    .project-name a {
-      color: var(--color-success);
-      text-decoration: none;
-      background-image: linear-gradient(var(--color-success), var(--color-success));
-      background-size: 0% 1px;
-      background-position: 0 100%;
-      background-repeat: no-repeat;
-      transition: background-size 0.4s ease;
-      padding-bottom: 2px;
-    }
-    .project-name a:hover { background-size: 100% 1px; }
-    .project-name a::after {
-      content: "";
-      display: inline-block;
-      width: 0.7em;
-      height: 0.7em;
-      margin-left: 0.4em;
-      background-color: var(--color-success);
-      -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M7 17L17 7'/><path d='M8 7h9v9'/></svg>") no-repeat center / contain;
-              mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M7 17L17 7'/><path d='M8 7h9v9'/></svg>") no-repeat center / contain;
-    }
-    .project-desc {
-      font-size: 0.95rem;
-      line-height: 1.6;
-      color: var(--color-text-secondary);
-      max-width: 56ch;
-    }
-    .project-date {
-      font-family: var(--serif);
-      font-size: 0.68rem;
-      letter-spacing: 0.1em;
-      color: var(--color-text-tertiary);
-      white-space: nowrap;
-      padding-top: 0.5rem;
-    }
-    .date-arrow {
-      vertical-align: -1px;
-      margin-left: 0.1em;
     }
 
     .about {
@@ -643,7 +656,7 @@
     .about-body p + p { margin-top: 1rem; }
 
     .meta {
-      font-family: var(--serif);
+      font-family: var(--font);
       font-size: 0.78rem;
       display: flex;
       flex-direction: column;
@@ -679,7 +692,7 @@
       align-items: end;
     }
     .contact-prompt {
-      font-family: var(--serif);
+      font-family: var(--font);
       font-weight: 400;
       font-size: clamp(1.3rem, 2.6vw, 1.8rem);
       line-height: 1.3;
@@ -687,7 +700,7 @@
     }
     .contact-prompt em { font-style: normal; color: var(--color-success); }
     .contact-link {
-      font-family: var(--serif);
+      font-family: var(--font);
       font-size: 1rem;
       color: var(--color-text-primary);
       text-decoration: none;
@@ -724,7 +737,7 @@
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 1rem;
-      font-family: var(--serif);
+      font-family: var(--font);
       font-size: 0.7rem;
       letter-spacing: 0.06em;
       color: var(--color-text-tertiary);
@@ -737,28 +750,42 @@
     footer a:hover { color: var(--color-success); }
     footer .right { display: flex; gap: 1.25rem; }
 
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     [data-i18n] { display: none; }
-    [data-i18n].show { display: inline; }
-    .lede[data-i18n].show,
-    .sub[data-i18n].show,
-    .contact-prompt[data-i18n].show,
-    .project-desc[data-i18n].show,
-    .featured-desc[data-i18n].show,
-    .assistant-role[data-i18n].show,
-    .service-prose p[data-i18n].show,
-    .about-body[data-i18n].show { display: block; }
-    dt[data-i18n].show { display: block; }
+    [data-i18n="es"]:lang(es),
+    [data-i18n="en"]:lang(en) { display: inline; }
+    .lede[data-i18n="es"]:lang(es),
+    .lede[data-i18n="en"]:lang(en),
+    .sub[data-i18n="es"]:lang(es),
+    .sub[data-i18n="en"]:lang(en),
+    .contact-prompt[data-i18n="es"]:lang(es),
+    .contact-prompt[data-i18n="en"]:lang(en),
+    .project-desc[data-i18n="es"]:lang(es),
+    .project-desc[data-i18n="en"]:lang(en),
+    .featured-desc[data-i18n="es"]:lang(es),
+    .featured-desc[data-i18n="en"]:lang(en),
+    .assistant-role[data-i18n="es"]:lang(es),
+    .assistant-role[data-i18n="en"]:lang(en),
+    .service-prose p[data-i18n="es"]:lang(es),
+    .service-prose p[data-i18n="en"]:lang(en),
+    .about-body[data-i18n="es"]:lang(es),
+    .about-body[data-i18n="en"]:lang(en) { display: block; }
+    dt[data-i18n="es"]:lang(es),
+    dt[data-i18n="en"]:lang(en) { display: block; }
 
     @media (max-width: 720px) {
       main { padding: 0 1.25rem 5rem; }
       .statusbar { padding: 0.65rem 1rem; font-size: 0.6rem; }
-      .services { grid-template-columns: 1fr; }
-      .service { border-right: 0; border-bottom: 1px solid var(--color-border); }
-      .service:last-child { border-bottom: 0; }
       .about { grid-template-columns: 1fr; gap: 2rem; }
-      .project { grid-template-columns: 56px 1fr; gap: 1rem; }
-      .project-logo { width: 56px; height: 56px; }
-      .project-date { grid-column: 2; padding-top: 0; }
       .contact { grid-template-columns: 1fr; gap: 1.5rem; }
       .contact-link { justify-self: start; }
       .hero::before {
@@ -819,51 +846,45 @@
 <div class="cta-row">
       <a class="cta primary" href="#contact" data-i18n="en">Let's talk</a>
       <a class="cta primary" href="#contact" data-i18n="es">Conversemos</a>
-      <a class="cta" href="#what-we-do" data-i18n="en">See our work</a>
-      <a class="cta" href="#what-we-do" data-i18n="es">Ver nuestro trabajo</a>
+      <a class="cta" href="#what-we-do" data-i18n="en">What we do</a>
+      <a class="cta" href="#what-we-do" data-i18n="es">Lo que hacemos</a>
     </div>
   </section>
 
   <div class="post-services">
   <img class="machine-rail" src="brand/machine.webp" alt="" aria-hidden="true">
 
-  <div class="section-head signal" id="what-we-do">
-    <span data-i18n="en">What we do</span>
-    <span data-i18n="es">Qué hacemos</span>
-  </div>
-
-  <section class="services">
-    <div class="service-prose">
-      <div class="service-copy">
-        <p class="service-do" data-i18n="en"><span>What we do.</span> We figure out with you what needs to be built. We build it. And we stay close until it actually works.</p>
-        <p class="service-do" data-i18n="es"><span>Lo que hacemos.</span> Pensamos contigo qué hay que construir. Lo construimos. Y nos quedamos cerca hasta que de verdad funcione.</p>
-
-        <p class="service-dont" data-i18n="en"><span>What we don't do.</span> We don't execute tickets without understanding what's behind them. We don't build in the dark and deliver only at the end. We don't take every project that walks in.</p>
-        <p class="service-dont" data-i18n="es"><span>Lo que no hacemos.</span> No ejecutamos tickets sin entender qué hay detrás. No construimos a ciegas y entregamos al final. No tomamos cualquier proyecto que llegue.</p>
-      </div>
-      <span class="services-mascot" aria-hidden="true"></span>
-    </div>
-  </section>
-
   <section class="projects" id="work">
-    <div class="section-head">
-      <span data-i18n="en">What we're building right now</span>
-      <span data-i18n="es">Lo que estamos construyendo ahora</span>
+    <div class="section-head signal">
+      <span data-i18n="en">What we're on right now</span>
+      <span data-i18n="es">En lo que estamos ahora</span>
     </div>
 
     <article class="featured">
+      <h2 class="sr-only">Revi — asistente con IA para permisos de edificación de la Cámara Chilena de la Construcción (CChC)</h2>
       <div class="featured-banner"></div>
       <div class="featured-body">
         <div class="featured-head">
-          <div class="featured-logo"><img src="brand/projects/revi/revi-logo.svg" alt="Revi"></div>
+          <div class="featured-logo"><img src="brand/projects/revi/revi-logo.svg" alt="Revi, asistente con IA de la CChC para permisos de edificación"></div>
           <div class="featured-client">
             <span class="featured-client-name">Cámara Chilena de la Construcción</span>
             <span class="featured-client-date">2025 → <span data-i18n="en">present</span><span data-i18n="es">actualidad</span></span>
           </div>
         </div>
 
-        <p class="featured-desc" data-i18n="en">An AI helper that makes building permits in Chile far less painful. It reads architectural drawings and paperwork, then walks applicants and city reviewers through the regulations together. Live at <a class="featured-inline-link" href="https://app.ia-revi.cl/" target="_blank" rel="noopener">app.ia-revi.cl</a>.</p>
-        <p class="featured-desc" data-i18n="es">Un asistente con IA que hace mucho menos doloroso obtener permisos de edificación en Chile. Lee planos y documentos, y guía a solicitantes y revisores municipales por la normativa, juntos. Disponible en <a class="featured-inline-link" href="https://app.ia-revi.cl/" target="_blank" rel="noopener">app.ia-revi.cl</a>.</p>
+        <p class="featured-desc" data-i18n="en">An AI helper that makes building permits in Chile far less painful. It reads architectural drawings and paperwork, then walks applicants and city reviewers through the regulations together.</p>
+        <p class="featured-desc" data-i18n="es">Un asistente con IA que hace mucho menos doloroso obtener permisos de edificación en Chile. Lee planos y documentos, y guía a solicitantes y revisores municipales por la normativa, juntos.</p>
+
+        <p data-i18n="es">
+          <a class="featured-cta" href="https://app.ia-revi.cl/" target="_blank" rel="noopener">Prueba Revi</a>
+          &nbsp;·&nbsp;
+          <a class="featured-cta" href="/revi/">conoce más</a>
+        </p>
+        <p data-i18n="en">
+          <a class="featured-cta" href="https://app.ia-revi.cl/" target="_blank" rel="noopener">Try Revi</a>
+          &nbsp;·&nbsp;
+          <a class="featured-cta" href="/revi/">learn more</a>
+        </p>
 
         <div class="featured-assistants">
           <div class="assistant">
@@ -886,8 +907,8 @@
 
         <div class="featured-meta">
           <div class="featured-meta-label">
-            <span data-i18n="en">In use at</span>
-            <span data-i18n="es">En uso en</span>
+            <span data-i18n="en">Live in 11 municipalities</span>
+            <span data-i18n="es">En producción en 11 municipios</span>
           </div>
           <div class="featured-meta-grid">
             <img src="brand/projects/revi/municipalidades/independencia.png" alt="Municipalidad de Independencia">
@@ -902,9 +923,25 @@
             <img src="brand/projects/revi/municipalidades/renca.png" alt="Municipalidad de Renca">
             <img src="brand/projects/revi/municipalidades/rancagua.png" alt="Municipalidad de Rancagua">
           </div>
+          <p class="sr-only">Revi está en producción en los siguientes municipios de Chile: Independencia, Maipú, Providencia, Puerto Montt, Aysén, Valdivia, Puerto Varas, Vitacura, Viña del Mar, Renca y Rancagua.</p>
         </div>
       </div>
     </article>
+  </section>
+
+  <div class="section-head" id="what-we-do">
+    <span data-i18n="en">What we do</span>
+    <span data-i18n="es">Qué hacemos</span>
+  </div>
+
+  <section class="services">
+    <div class="service-prose">
+      <div class="service-copy">
+        <p class="service-do" data-i18n="en"><span>How we work.</span> Two or three projects at a time. We figure out with you what needs to be built, we build it, and we stay on it until it's solved.</p>
+        <p class="service-do" data-i18n="es"><span>Cómo trabajamos.</span> Pocos proyectos a la vez. Pensamos contigo qué hay que construir, lo construimos, y nos quedamos hasta resolverlo.</p>
+      </div>
+      <span class="services-mascot" aria-hidden="true"></span>
+    </div>
   </section>
 
   <section class="about">
@@ -1015,7 +1052,7 @@
     });
   });
 
-  document.querySelectorAll('.featured-inline-link').forEach(el => {
+  document.querySelectorAll('.featured-cta, .featured-inline-link').forEach(el => {
     el.addEventListener('click', () => {
       posthog.capture('featured_project_link_clicked', { project: 'revi' });
     });
