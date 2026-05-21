@@ -1,0 +1,19 @@
+# BipBop Labs
+
+> Estudio de software chileno que construye sistemas con IA, herramientas internas y plataformas operacionales. Sede en Santiago, Chile. Equipo de 3 personas. Fundado por Juan Vargas.
+
+BipBop Labs (sitio: https://bipbop.cl) es un estudio pequeño de software con sede en Santiago, Chile. Trabajamos con empresas y gremios que tienen procesos pesados de normativa o documentación y se benefician de IA aplicada al dominio.
+
+## Proyectos
+
+- [Revi CChC](https://bipbop.cl/revi/): asistente con inteligencia artificial de la Cámara Chilena de la Construcción (CChC) para permisos de edificación en Chile. Lee planos arquitectónicos y documentos, y guía a solicitantes y a revisores municipales (Direcciones de Obras Municipales, DOM) por la normativa vigente (LGUC, OGUC). Disponible en https://app.ia-revi.cl. Cuenta con dos asistentes: Clara (para solicitantes) y Norman (para revisores). En producción en 11 municipios: Independencia, Maipú, Providencia, Puerto Montt, Aysén, Valdivia, Puerto Varas, Vitacura, Viña del Mar, Renca y Rancagua. Gratuito para municipios con convenio con la CChC. Desarrollado por BipBop Labs.
+
+## Nombres alternativos para Revi
+
+Revi también se busca y referencia como: Revi CChC, Revi de la Cámara Chilena de la Construcción, ia-revi, ia revi, ia-revi.cl, app.ia-revi.cl, Revi IA. Clara y Norman son los dos asistentes que conforman Revi.
+
+## Contacto
+
+- Email: juan@bipbop.cl
+- Sitio: https://bipbop.cl
+- Página de Revi: https://bipbop.cl/revi/
