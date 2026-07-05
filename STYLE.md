@@ -15,21 +15,21 @@ Two vector sources are the single source of truth. Everything under
 
 ```
 brand/
-├── head.svg          ← source: penguin head mark
-├── body.svg          ← source: full-body penguin mark
+├── head.svg          ← source: penguin head mark — THE logo
+├── body.svg          ← source: full-body penguin (deprecated; landing hero only)
 ├── machine.webp      (photo, not generated)
 ├── skyline.webp      (photo, not generated)
 ├── projects/         (project art, not generated)
 └── generated/        ← everything below is script output
     ├── og.{svg,png}  favicon.{svg,ico}  wordmark.{svg,png}  bipbop_logo.webp
     ├── social/       linkedin-banner, linkedin-avatar, github-avatar
-    └── stickers/     01-logo … 05-url (svg + png + print variants)
+    └── stickers/     01-logo … 04-url (svg + png + print variants)
 ```
 
 | Mark | Source | What it is | Where it's used |
 |---|---|---|---|
-| **Head** | `brand/head.svg` | Penguin head on a square 512×512 canvas | Icon sticker, favicon, avatars, OG image, wordmark lockups, site header |
-| **Body** | `brand/body.svg` | Full-body penguin holding blocks (624×1024) | Logo sticker, stacked lockups, LinkedIn banner, site hero background |
+| **Head** | `brand/head.svg` | Penguin head on a square 512×512 canvas — **the** logo | Everywhere: logo sticker, favicon, avatars, OG image, lockups, LinkedIn banner, site header |
+| **Body** | `brand/body.svg` | Full-body penguin holding blocks (624×1024). **Deprecated as a logo** — never use it for identity | Landing hero background only (`bipbop_logo.webp`) |
 | **Wordmark** | text in `scripts/generate-brand.py` templates | `BipBop Labs_` in Instrument Serif | Everywhere text appears next to a mark |
 
 Both marks are single-color traces (`fill` is set per-asset from the palette).
@@ -79,7 +79,8 @@ Never photo-negative invert. Dark variants are a **knockout**:
 
 ## Asset inventory
 
-**Sources (hand-edited):** `brand/head.svg`, `brand/body.svg`, plus the photos
+**Sources (hand-edited):** `brand/head.svg`, `brand/body.svg` (deprecated —
+feeds only the landing hero raster), plus the photos
 `brand/machine.webp`, `brand/skyline.webp` and `brand/projects/*` (not brand
 marks, not generated).
 
@@ -88,18 +89,17 @@ marks, not generated).
 
 | Asset | Files | Notes |
 |---|---|---|
-| Logo sticker | `brand/generated/stickers/01-logo.{svg,png}` | Body mark, ink on transparent |
+| Logo sticker | `brand/generated/stickers/01-logo.{svg,png}` | Head mark, square, ink on transparent |
 | Wordmark sticker | `brand/generated/stickers/02-wordmark.{svg,png}` | Head + `BipBop Labs_`, icon height = 5/3 × cap-height of B |
-| Icon sticker | `brand/generated/stickers/03-icon.{svg,png}` | Head mark, square |
-| Stacked lockups | `brand/generated/stickers/04-lockup-{dark,light}.{svg,png}` + `-on-black/-on-white.png` | Body over wordmark; dark is the knockout variant |
-| URL lockups | `brand/generated/stickers/05-url-{dark,light}.{svg,png}` + on-bg PNGs | Head + `bipbop.cl`; text is pre-outlined so print shops never need the font |
+| Stacked lockups | `brand/generated/stickers/03-lockup-{dark,light}.{svg,png}` + `-on-black/-on-white.png` | Head over wordmark; dark is the knockout variant |
+| URL lockups | `brand/generated/stickers/04-url-{dark,light}.{svg,png}` + on-bg PNGs | Head + `bipbop.cl`; text is pre-outlined so print shops never need the font |
 | Wordmark | `brand/generated/wordmark.{svg,png}` | Text-only `BipBop Labs_` |
 | OG image | `brand/generated/og.{svg,png}` | 1200×630 |
 | Favicon | `brand/generated/favicon.{svg,ico}` | Rounded cream tile, head near full-bleed, moss dash; ICO packs 64/48/32/16, with strokes bolded at 32 (+80) and 16 (+140 path units) so lines survive tab scale |
 | LinkedIn banner | `brand/generated/social/linkedin-banner.{svg,png}` | 1584×396 |
 | LinkedIn avatar | `brand/generated/social/linkedin-avatar.{svg,png}` | 400×400 |
 | GitHub avatar | `brand/generated/social/github-avatar.{svg,png}` | 460×460 |
-| Site hero raster | `brand/generated/bipbop_logo.webp` | Body mark; referenced by `index.html` CSS |
+| Site hero raster | `brand/generated/bipbop_logo.webp` | Body mark — its only remaining use; referenced by `index.html` CSS |
 
 ## Motifs
 

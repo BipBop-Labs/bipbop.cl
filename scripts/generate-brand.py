@@ -2,11 +2,12 @@
 """
 Regenerate EVERY brand asset from the two vector sources + one palette:
 
-    brand/head.svg   — penguin head mark (square), used for icon/favicon/avatars
-    brand/body.svg   — full-body penguin mark, used for logo/lockups
+    brand/head.svg   — penguin head mark (square): THE logo, used everywhere
+    brand/body.svg   — full-body penguin, DEPRECATED as a logo; its only
+                       remaining use is the landing hero raster (bipbop_logo.webp)
     (the wordmark text "BipBop Labs_" lives in the templates below)
 
-Everything the script writes lands under brand/generated/ (stickers 01–05
+Everything the script writes lands under brand/generated/ (stickers 01–04
 incl. on-black/on-white prints, wordmark, OG image, LinkedIn banner/avatar,
 GitHub avatar, favicon svg+ico, and the site's bipbop_logo.webp) — the brand/
 top level holds only the sources.
@@ -122,22 +123,13 @@ def emit(svg_rel: Path, svg_text: str,
 
 # --- Sticker templates ----------------------------------------------------------
 # The head paths live in a 4980x5120 space (translate/scale flips trace coords);
-# the body paths in a 6240x10240 space. Compositions keep those wrappers.
-
-ICON_STICKER_SVG = """<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-7 0 512 512">
-  <title>BipBop Labs — Icon Sticker</title>
-  <g transform="translate(0,512) scale(0.1,-0.1)" fill="{text}">
-{head_paths}
-  </g>
-</svg>
-"""
+# compositions keep that wrapper.
 
 LOGO_STICKER_SVG = """<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 624 1024">
-  <title>BipBop Labs — Logo</title>
-  <g transform="translate(0,1024) scale(0.1,-0.1)" fill="{text}">
-{body_paths}
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-7 0 512 512">
+  <title>BipBop Labs — Logo Sticker</title>
+  <g transform="translate(0,512) scale(0.1,-0.1)" fill="{text}">
+{head_paths}
   </g>
 </svg>
 """
@@ -166,12 +158,12 @@ WORDMARK_SVG = """<?xml version="1.0" encoding="UTF-8"?>
 </svg>
 """
 
-# Stacked lockup: penguin on top, wordmark below. The dark variant is a proper
+# Stacked lockup: head mark on top, wordmark below. The dark variant is a proper
 # knockout (cream ink + lifted accent + optically thinned strokes to counter the
-# irradiation illusion), NOT a photo-negative invert. The penguin is the raster
-# logo recolored via an SVG filter (flood the ink color through its alpha, then
+# irradiation illusion), NOT a photo-negative invert. The head is the raster
+# icon recolored via an SVG filter (flood the ink color through its alpha, then
 # erode to thin the lines); the wordmark is live text so it stays crisp.
-LOCKUP_DARK_SVG = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 728 940" role="img" aria-label="BipBop Labs">
+LOCKUP_DARK_SVG = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 728 700" role="img" aria-label="BipBop Labs">
   <title>BipBop Labs — stacked lockup (on dark)</title>
   <defs>
     <filter id="knockout" x="-6%" y="-6%" width="112%" height="112%">
@@ -181,10 +173,10 @@ LOCKUP_DARK_SVG = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http:/
     </filter>
   </defs>
 
-  <image href="{logo_href}" x="164" y="30" width="400" height="657"
+  <image href="{icon_href}" x="154" y="30" width="420" height="420"
          preserveAspectRatio="xMidYMid meet" filter="url(#knockout)"/>
 
-  <text x="364" y="876" text-anchor="middle"
+  <text x="364" y="630" text-anchor="middle"
         font-family="'Instrument Serif', 'Times New Roman', serif"
         font-size="150" fill="{ink_on_dark}" stroke="{ink_on_dark}" stroke-width="1.6"
         paint-order="stroke fill"
@@ -193,7 +185,7 @@ LOCKUP_DARK_SVG = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http:/
 """
 
 # Light variant of the same stacked lockup, for parity (dark ink on transparent).
-LOCKUP_LIGHT_SVG = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 728 940" role="img" aria-label="BipBop Labs">
+LOCKUP_LIGHT_SVG = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 728 700" role="img" aria-label="BipBop Labs">
   <title>BipBop Labs — stacked lockup (on light)</title>
   <defs>
     <filter id="ink" x="-6%" y="-6%" width="112%" height="112%">
@@ -202,10 +194,10 @@ LOCKUP_LIGHT_SVG = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http:
     </filter>
   </defs>
 
-  <image href="{logo_href}" x="164" y="30" width="400" height="657"
+  <image href="{icon_href}" x="154" y="30" width="420" height="420"
          preserveAspectRatio="xMidYMid meet" filter="url(#ink)"/>
 
-  <text x="364" y="876" text-anchor="middle"
+  <text x="364" y="630" text-anchor="middle"
         font-family="'Instrument Serif', 'Times New Roman', serif"
         font-size="150" fill="{text}" stroke="{text}" stroke-width="2.8"
         paint-order="stroke fill"
@@ -282,6 +274,9 @@ OG_SVG = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.o
 </svg>
 """
 
+# No mark here on purpose: the LinkedIn avatar (the head) overlaps the banner's
+# bottom-left, so a mark in the banner would double the penguin. Text only,
+# centered right of the avatar overlap zone.
 LINKEDIN_BANNER_SVG = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1584 396" role="img" aria-label="BipBop Labs">
   <title>BipBop Labs</title>
   <defs>
@@ -299,18 +294,16 @@ LINKEDIN_BANNER_SVG = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="ht
   <rect width="1584" height="396" fill="url(#glow-tr)"/>
   <rect width="1584" height="396" fill="url(#glow-bl)"/>
 
-  <image href="{logo_href}" x="640" y="78" width="146" height="240" preserveAspectRatio="xMidYMid meet"/>
-
-  <text x="1180" y="218" text-anchor="end"
+  <text x="870" y="200" text-anchor="middle"
         font-family="'Instrument Serif', 'Times New Roman', serif"
         font-size="76" fill="{text}"
     >Bip<tspan fill="{signal}">Bop</tspan> Labs<tspan fill="{signal}">_</tspan></text>
 
-  <text x="1180" y="262" text-anchor="end"
+  <text x="870" y="244" text-anchor="middle"
         font-family="'Instrument Serif', 'Times New Roman', serif"
         font-size="22" fill="{secondary}"
     >Software hecho con cari&#241;o,</text>
-  <text x="1180" y="292" text-anchor="end"
+  <text x="870" y="274" text-anchor="middle"
         font-family="'Instrument Serif', 'Times New Roman', serif"
         font-size="22" fill="{secondary}"
     >pensado contigo y construido a tu lado.</text>
@@ -408,35 +401,31 @@ def render(palette_name: str) -> None:
     fmt = dict(
         palette,
         head_paths=vector_paths(HEAD_SRC),
-        body_paths=vector_paths(BODY_SRC),
         icon_href=render_data_uri(HEAD_SRC, 512, 512),
-        logo_href=render_data_uri(BODY_SRC, None, 1024),
     )
 
-    # stickers, from the vector sources
+    # stickers, from the head source
     emit(STICKERS / "01-logo.svg", LOGO_STICKER_SVG.format(**fmt),
-         [(STICKERS / "01-logo.png", dict(w=1200))])
+         [(STICKERS / "01-logo.png", dict(w=1200, h=1200))])
     emit(STICKERS / "02-wordmark.svg", WORDMARK_STICKER_SVG.format(**fmt),
          [(STICKERS / "02-wordmark.png", dict(w=3000))])
-    emit(STICKERS / "03-icon.svg", ICON_STICKER_SVG.format(**fmt),
-         [(STICKERS / "03-icon.png", dict(w=1200, h=1200))])
-    emit(STICKERS / "04-lockup-dark.svg", LOCKUP_DARK_SVG.format(**fmt),
-         [(STICKERS / "04-lockup-dark.png", dict(w=1456, h=1880)),
-          (STICKERS / "04-lockup-dark-on-black.png", dict(w=3000, bg="black"))])
-    emit(STICKERS / "04-lockup-light.svg", LOCKUP_LIGHT_SVG.format(**fmt),
-         [(STICKERS / "04-lockup-light.png", dict(w=1456, h=1880)),
-          (STICKERS / "04-lockup-light-on-white.png", dict(w=3000, bg="white"))])
-    emit(STICKERS / "05-url-dark.svg",
+    emit(STICKERS / "03-lockup-dark.svg", LOCKUP_DARK_SVG.format(**fmt),
+         [(STICKERS / "03-lockup-dark.png", dict(w=1456, h=1400)),
+          (STICKERS / "03-lockup-dark-on-black.png", dict(w=3000, bg="black"))])
+    emit(STICKERS / "03-lockup-light.svg", LOCKUP_LIGHT_SVG.format(**fmt),
+         [(STICKERS / "03-lockup-light.png", dict(w=1456, h=1400)),
+          (STICKERS / "03-lockup-light-on-white.png", dict(w=3000, bg="white"))])
+    emit(STICKERS / "04-url-dark.svg",
          URL_STICKER_SVG.format(variant="on dark", ink=palette["ink_on_dark"],
                                 accent=palette["signal_on_dark"], thin_defs=URL_THIN_DEFS,
                                 thin_attr=' filter="url(#thin)"', **fmt),
-         [(STICKERS / "05-url-dark.png", dict(w=3000)),
-          (STICKERS / "05-url-dark-on-black.png", dict(w=3000, bg="black"))])
-    emit(STICKERS / "05-url-light.svg",
+         [(STICKERS / "04-url-dark.png", dict(w=3000)),
+          (STICKERS / "04-url-dark-on-black.png", dict(w=3000, bg="black"))])
+    emit(STICKERS / "04-url-light.svg",
          URL_STICKER_SVG.format(variant="on light", ink=palette["text"],
                                 accent=palette["signal"], thin_defs="", thin_attr="", **fmt),
-         [(STICKERS / "05-url-light.png", dict(w=3000)),
-          (STICKERS / "05-url-light-on-white.png", dict(w=3000, bg="white"))])
+         [(STICKERS / "04-url-light.png", dict(w=3000)),
+          (STICKERS / "04-url-light-on-white.png", dict(w=3000, bg="white"))])
 
     # brand root: text wordmark + og + favicon
     emit(GEN / "wordmark.svg", WORDMARK_SVG.format(**fmt),
@@ -453,7 +442,8 @@ def render(palette_name: str) -> None:
     emit(SOCIAL / "github-avatar.svg", GITHUB_AVATAR_SVG.format(**fmt),
          [(SOCIAL / "github-avatar.png", dict(w=460, h=460))])
 
-    # site background raster (index.html uses brand/bipbop_logo.webp)
+    # landing hero raster — the deprecated full-body mark's only remaining use
+    # (index.html hero background); do not use the body for anything else
     with tempfile.TemporaryDirectory() as tmp:
         png = Path(tmp) / "logo.png"
         rsvg(BODY_SRC, png, h=3922)
