@@ -662,18 +662,26 @@
       font-size: 1.1rem;
       margin-bottom: 0;
     }
-    .featured-name {
+    /* compact cards lead with the client, not the project specifics */
+    .featured-lead { display: flex; flex-direction: column; gap: 0.3rem; }
+    .featured-lead-name {
       font-family: var(--font);
-      font-size: 1.35rem;
+      font-size: 1.4rem;
+      line-height: 1.2;
       color: var(--color-text-primary);
     }
-    .featured-client-name a {
+    .featured-lead-name a {
       color: inherit;
       text-decoration: none;
       border-bottom: 1px solid var(--color-border-strong);
       transition: opacity 0.2s;
     }
-    .featured-client-name a:hover { opacity: 0.7; }
+    .featured-lead-name a:hover { opacity: 0.7; }
+    .featured-lead-sub {
+      font-family: var(--font);
+      font-size: 0.95rem;
+      color: var(--color-text-tertiary);
+    }
 
     .about {
       margin-bottom: 5rem;
@@ -988,13 +996,12 @@
       <div class="featured-banner" style="background-image:url('brand/projects/cdt/banner.webp')"></div>
       <div class="featured-body">
         <div class="featured-head">
-          <div class="featured-name">
-            <span data-i18n="en">Internal tools</span>
-            <span data-i18n="es">Herramientas internas</span>
-          </div>
-          <div class="featured-client">
-            <span class="featured-client-name"><a href="https://www.cdt.cl/" target="_blank" rel="noopener noreferrer">Corporación de Desarrollo Tecnológico</a></span>
-            <span class="featured-client-date">2025 → <span data-i18n="en">present</span><span data-i18n="es">actualidad</span></span>
+          <div class="featured-lead">
+            <span class="featured-lead-name"><a href="https://www.cdt.cl/" target="_blank" rel="noopener noreferrer">Corporación de Desarrollo Tecnológico</a></span>
+            <span class="featured-lead-sub">
+              <span data-i18n="en">Internal tools</span><span data-i18n="es">Herramientas internas</span>
+              &nbsp;·&nbsp;2026 → <span data-i18n="en">present</span><span data-i18n="es">actualidad</span>
+            </span>
           </div>
         </div>
         <p class="featured-desc" data-i18n="en">A few smaller things we're building for the CChC's tech arm. We're working towards meetings that take their own notes, areas that keep up with each other without chasing for updates, and one place to see what's going on across the org. Still early, and still building our way there.</p>
@@ -1007,13 +1014,12 @@
       <div class="featured-banner" style="background-image:url('brand/projects/csmlc/banner.png')"></div>
       <div class="featured-body">
         <div class="featured-head">
-          <div class="featured-name">
-            <span data-i18n="en">Digital enrollment</span>
-            <span data-i18n="es">Matrícula digital</span>
-          </div>
-          <div class="featured-client">
-            <span class="featured-client-name"><a href="https://csmlc.cl/" target="_blank" rel="noopener noreferrer">Colegio Santa María de Lo Cañas</a></span>
-            <span class="featured-client-date">2026 → <span data-i18n="en">present</span><span data-i18n="es">actualidad</span></span>
+          <div class="featured-lead">
+            <span class="featured-lead-name"><a href="https://csmlc.cl/" target="_blank" rel="noopener noreferrer">Colegio Santa María de Lo Cañas</a></span>
+            <span class="featured-lead-sub">
+              <span data-i18n="en">Digital enrollment</span><span data-i18n="es">Matrícula digital</span>
+              &nbsp;·&nbsp;2026 → <span data-i18n="en">present</span><span data-i18n="es">actualidad</span>
+            </span>
           </div>
         </div>
         <p class="featured-desc" data-i18n="en">We're working to move the whole enrollment process online for the school. The idea is families filling things out from home instead of standing in line, and a school that isn't drowning in paper forms. We're getting there.</p>
