@@ -1,10 +1,12 @@
-import { readdir } from 'node:fs/promises'
+import { mkdtemp, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { EMPTY_FIELDS } from '#/lib/application'
 import { Route } from '#/routes/api.applications'
 import { resetState } from './applications'
+import { closeDb } from './db'
 
 const POST = (
   Route.options.server!.handlers as unknown as {
@@ -80,7 +82,9 @@ async function tempCvDirs() {
   return entries.filter((name) => name.startsWith('bipbop-cv-'))
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  closeDb()
+  process.env.DATA_DIR = await mkdtemp(join(tmpdir(), 'bipbop-db-'))
   process.env.DISCORD_WEBHOOK_URL = WEBHOOK
   resetState()
 })

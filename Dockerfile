@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:22-alpine AS base
+FROM node:24-alpine AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -22,7 +22,11 @@ RUN pnpm build
 FROM base AS runtime
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV DATA_DIR=/data
 COPY --from=build /app/.output ./.output
+# La base va en un volumen, y tiene que poder escribirla el usuario node.
+RUN mkdir -p /data && chown node:node /data
+VOLUME /data
 EXPOSE 3000
 USER node
 CMD ["node", ".output/server/index.mjs"]

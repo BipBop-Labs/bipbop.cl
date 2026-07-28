@@ -24,6 +24,7 @@ import {
   FLAG_VALUE,
   POSTULAR_HELP,
 } from './shell-files'
+import { getDb } from './db'
 import { inspectPdf } from './pdf'
 
 /**
@@ -63,30 +64,86 @@ type Session = {
   done: boolean
 }
 
-const SESSION_TTL_MS = 2 * 60 * 60 * 1000
-const MAX_SESSIONS = 500
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000
+const MAX_SESSIONS = 2000
 /** Nadie llena esto de verdad en menos de un minuto. */
 const MIN_FILL_MS = 60_000
 
-const sessions = new Map<string, Session>()
+/** Envíos en curso, para que un doble Enter no mande dos veces. */
+const sending = new Set<string>()
+
+type Row = {
+  id: string
+  created_at: number
+  state: string
+  cv: Uint8Array | null
+  cv_name: string | null
+}
 
 function sweep() {
-  const now = Date.now()
-  for (const [id, session] of sessions) {
-    if (now - session.createdAt > SESSION_TTL_MS) sessions.delete(id)
-  }
+  const db = getDb()
+  db.prepare('DELETE FROM sessions WHERE created_at < ?').run(
+    Date.now() - SESSION_TTL_MS,
+  )
   // Tope duro por si alguien abre sesiones en masa: se van las más viejas.
-  while (sessions.size > MAX_SESSIONS) {
-    const oldest = sessions.keys().next().value
-    if (oldest === undefined) break
-    sessions.delete(oldest)
-  }
+  db.prepare(
+    `DELETE FROM sessions WHERE id IN (
+       SELECT id FROM sessions ORDER BY updated_at DESC LIMIT -1 OFFSET ?
+     )`,
+  ).run(MAX_SESSIONS)
+}
+
+function saveSession(session: Session) {
+  getDb()
+    .prepare(
+      `INSERT INTO sessions (id, created_at, updated_at, state, cv, cv_name)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         updated_at = excluded.updated_at,
+         state      = excluded.state,
+         cv         = excluded.cv,
+         cv_name    = excluded.cv_name`,
+    )
+    .run(
+      session.id,
+      session.createdAt,
+      Date.now(),
+      JSON.stringify({
+        step: session.step,
+        draft: session.draft,
+        flag: session.flag,
+        done: session.done,
+      }),
+      session.cv?.bytes ?? null,
+      session.cv?.name ?? null,
+    )
 }
 
 function getSession(id?: string): { session: Session; expired: boolean } {
   sweep()
-  const existing = id ? sessions.get(id) : undefined
-  if (existing) return { session: existing, expired: false }
+
+  const row = id
+    ? (getDb()
+        .prepare('SELECT * FROM sessions WHERE id = ?')
+        .get(id) as Row | undefined)
+    : undefined
+
+  if (row) {
+    const state = JSON.parse(row.state) as Pick<
+      Session,
+      'step' | 'draft' | 'flag' | 'done'
+    >
+    return {
+      session: {
+        id: row.id,
+        createdAt: row.created_at,
+        ...state,
+        cv: row.cv ? { bytes: row.cv, name: row.cv_name ?? 'cv.pdf' } : null,
+        sending: sending.has(row.id),
+      },
+      expired: false,
+    }
+  }
 
   const session: Session = {
     id: randomUUID(),
@@ -98,13 +155,14 @@ function getSession(id?: string): { session: Session; expired: boolean } {
     sending: false,
     done: false,
   }
-  sessions.set(session.id, session)
+  saveSession(session)
   // Si traía un id que ya no está, lo que había se perdió y hay que decirlo.
   return { session, expired: Boolean(id) }
 }
 
 export function resetSessions() {
-  sessions.clear()
+  sending.clear()
+  getDb().exec('DELETE FROM sessions')
 }
 
 type Step = {
@@ -440,7 +498,7 @@ function attachCv(
 }
 
 async function send(session: Session, ip: string): Promise<Array<Line>> {
-  if (session.sending) return []
+  if (sending.has(session.id)) return []
   if (!checkRateLimit(ip)) {
     return err('Demasiadas postulaciones desde aquí. Inténtalo más tarde.')
   }
@@ -460,7 +518,7 @@ async function send(session: Session, ip: string): Promise<Array<Line>> {
 
   if (!session.cv) return err('Falta el CV. Adjunta el PDF antes de enviar.')
 
-  session.sending = true
+  sending.add(session.id)
   try {
     const record = await submitApplication(fields, session.cv, {
       source: 'terminal',
@@ -488,7 +546,7 @@ async function send(session: Session, ip: string): Promise<Array<Line>> {
       'presiona Enter para intentarlo de nuevo.',
     )
   } finally {
-    session.sending = false
+    sending.delete(session.id)
   }
 }
 
@@ -509,12 +567,17 @@ export async function runShell(
 
   if (expired) return state(session, [...echo, ...expiredNotice()])
 
+  const reply = (lines: Array<Line>) => {
+    saveSession(session)
+    return state(session, lines)
+  }
+
   // Todavía no empieza a postular: es un comando.
   if (session.step === null) {
     const lines = runCommand(session, input)
-    const reply = state(session, [...echo, ...lines])
-    if (input.trim() === 'clear') return { ...reply, lines: [], clear: true }
-    return reply
+    const out = reply([...echo, ...lines])
+    if (input.trim() === 'clear') return { ...out, lines: [], clear: true }
+    return out
   }
 
   // Terminó de responder y confirma con Enter.
@@ -523,15 +586,15 @@ export async function runShell(
       session.step = null
       session.draft = { ...EMPTY_FIELDS }
       session.cv = null
-      return state(session, [...echo, ...muted('Saliste. Nada se envió.')])
+      return reply([...echo, ...muted('Saliste. Nada se envió.')])
     }
     if (input.trim()) {
-      return state(session, [...echo, ...muted('Presiona Enter para enviar.')])
+      return reply([...echo, ...muted('Presiona Enter para enviar.')])
     }
-    return state(session, [...echo, ...(await send(session, ip))])
+    return reply([...echo, ...(await send(session, ip))])
   }
 
-  return state(session, [...echo, ...applyInput(session, input)])
+  return reply([...echo, ...applyInput(session, input)])
 }
 
 const COMMANDS = ['help', 'ls', 'cat', 'clear', './postular', 'agents']
@@ -598,7 +661,10 @@ export function runAttach(
     return state(session, expiredNotice())
   }
   if (session.done) return state(session, [])
-  return state(session, attachCv(session, file))
+
+  const lines = attachCv(session, file)
+  saveSession(session)
+  return state(session, lines)
 }
 
 /** Primera carga de la página. */

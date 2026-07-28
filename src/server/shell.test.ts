@@ -1,6 +1,10 @@
+import { mkdtemp } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { resetState } from './applications'
+import { closeDb } from './db'
 import { completeInput, greet, resetSessions, runAttach, runShell } from './shell'
 import { FLAG_VALUE } from './shell-files'
 
@@ -21,7 +25,9 @@ function discordOk() {
   )
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  closeDb()
+  process.env.DATA_DIR = await mkdtemp(join(tmpdir(), 'bipbop-db-'))
   process.env.DISCORD_WEBHOOK_URL = 'https://discord.test/webhook'
   resetSessions()
   resetState()
@@ -203,6 +209,42 @@ describe('postulación', () => {
 
     const sinLink = await runShell(sessionId, 'Construí un motor, sin enlace.', IP)
     expect(text(sinLink)).toContain('Falta el enlace')
+  })
+
+  it('sobrevive a un reinicio del servidor', async () => {
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP)
+    await runShell(sessionId, 'Ada Lovelace', IP)
+    runAttach(sessionId, { bytes: PDF, name: 'cv.pdf', type: 'application/pdf' })
+
+    closeDb() // como si redesplegáramos: se cae todo lo que había en memoria
+
+    // La sesión sigue donde iba, con el CV puesto.
+    const sigue = await runShell(sessionId, 'ada@example.com', IP)
+    expect(text(sigue)).not.toContain('sesión expiró')
+    expect(text(sigue)).toContain('GitHub')
+
+    await runShell(sessionId, 'ada', IP)
+    const saltaCv = await runShell(sessionId, 'ada', IP)
+    expect(text(saltaCv)).toContain('Algo que hayas construido')
+  })
+
+  it('recuerda quién ya postuló aunque se reinicie', async () => {
+    discordOk()
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP)
+    await fill(sessionId)
+    vi.setSystemTime(Date.now() + 5 * 60_000)
+    await runShell(sessionId, '', IP)
+
+    closeDb()
+
+    const otra = greet()
+    await runShell(otra.sessionId, './postular', IP)
+    await fill(otra.sessionId)
+    vi.setSystemTime(Date.now() + 5 * 60_000)
+    const reintento = await runShell(otra.sessionId, '', IP)
+    expect(text(reintento)).toContain('Ya recibimos una postulación')
   })
 
   it('avisa si la sesión se perdió, en vez de confundir', () => {

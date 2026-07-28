@@ -38,6 +38,7 @@ src/routes/__root.tsx  the HTML shell: fonts, favicon, PostHog, language provide
 src/components/        shared pieces (the wordmark SVG)
 src/data/schema.ts     JSON-LD structured data, one graph per page
 src/lib/lang.tsx       ES/EN language context behind the header toggle
+src/server/            server-only code: the terminal, delivery, SQLite
 src/styles.css         Tailwind theme tokens + the handful of rules utilities can't express
 public/                served as-is: brand assets, robots.txt, sitemap.xml, llms.txt
 scripts/               asset generation
@@ -68,20 +69,23 @@ There's a flag hidden in the terminal. Finding it and passing it with
 `./postular --flag <value>` marks the application in Discord. It changes
 nothing formally; it's just signal.
 
-**Discord is the source of truth.** The server stores nothing: the request is
-screened for abuse, the CV is validated inside a temporary folder and uploaded
-to the team's webhook, and the message itself carries the whole application:
-fields, an id, a timestamp and `status: new`. The temp folder is deleted either
-way, so the PDF never stays on disk. If Discord is down nothing is recorded and
-the candidate can simply retry.
+**Discord is the source of truth for applications.** The CV is validated inside
+a temporary folder and uploaded to the team's webhook, and the message itself
+carries the whole application: fields, an id, a timestamp and `status: new`.
+The temp folder is deleted either way, so the PDF never stays on disk. If
+Discord is down nothing is recorded and the candidate can simply retry.
 
-Spam and duplicate protection (minimum fill time, per-IP rate limits, one
-application per email per 24 h) lives in memory, so it resets on restart. That's
-deliberate: it's a brake, not a record.
+**SQLite holds what hurts to lose on a deploy** (`src/server/db.ts`, via Node's
+built-in `node:sqlite`, no dependency and no extra container): half-finished
+terminal sessions, so a redeploy doesn't wipe what someone was typing, and the
+hash of each email that already applied, so the 24 h duplicate check survives a
+restart. It stores the hash, never the address. It lives in `$DATA_DIR`, mounted
+as a volume. Per-IP rate limits stay in memory, since those are a brake and not
+a record.
 
 See `src/server/applications.ts` for the screening and validation rules.
 
-The only configuration is `DISCORD_WEBHOOK_URL`; see `.env.example`.
+Configuration is `DISCORD_WEBHOOK_URL` and `DATA_DIR`; see `.env.example`.
 
 ## Adding a backend
 
@@ -107,7 +111,9 @@ docker run -p 3000:3000 bipbop
 
 On **Coolify**: create an Application from this repo, pick the *Dockerfile*
 build pack, set the port to `3000`, and point the health check at `/api/health`.
-The only environment variable is `DISCORD_WEBHOOK_URL`; no volumes needed.
+Set `DISCORD_WEBHOOK_URL`, and mount a persistent volume at `/data` so the
+SQLite file survives redeploys. The container publishes no ports of its own;
+the proxy reaches it over the internal network.
 
 ## Brand assets
 

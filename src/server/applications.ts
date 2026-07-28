@@ -1,9 +1,10 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import type { ApplicationFields } from '#/lib/application'
+import { getDb } from './db'
 import { inspectPdf, safeCvName } from './pdf'
 
 /**
@@ -36,11 +37,16 @@ export type Application = ApplicationFields &
   }
 
 /**
- * Ventanas deslizantes en memoria. Se pierden al reiniciar, y está bien: son
- * un freno para bots y dedos apurados, no un registro.
+ * El rate limit vive en memoria y se pierde al reiniciar: es un freno para
+ * bots, no un registro. La deduplicación sí persiste, para que un redespliegue
+ * no habilite postular dos veces.
  */
 const hits = new Map<string, Array<number>>()
-const applied = new Map<string, number>()
+
+/** Guardamos el hash, no el correo. */
+function emailHash(email: string): string {
+  return createHash('sha256').update(email.trim().toLowerCase()).digest('hex')
+}
 
 export function checkRateLimit(
   ip: string,
@@ -61,13 +67,24 @@ export function checkRateLimit(
 }
 
 export function isDuplicate(email: string, now = Date.now()): boolean {
-  const last = applied.get(email.toLowerCase())
-  return last !== undefined && now - last < DEDUPE_WINDOW_MS
+  const row = getDb()
+    .prepare('SELECT created_at FROM applied WHERE email_hash = ?')
+    .get(emailHash(email)) as { created_at: number } | undefined
+  return row !== undefined && now - row.created_at < DEDUPE_WINDOW_MS
+}
+
+function markApplied(email: string) {
+  getDb()
+    .prepare(
+      `INSERT INTO applied (email_hash, created_at) VALUES (?, ?)
+       ON CONFLICT(email_hash) DO UPDATE SET created_at = excluded.created_at`,
+    )
+    .run(emailHash(email), Date.now())
 }
 
 export function resetState() {
   hits.clear()
-  applied.clear()
+  getDb().exec('DELETE FROM applied')
 }
 
 export class CvRejected extends Error {}
@@ -188,7 +205,7 @@ export async function submitApplication(
     discordMessage(fields, meta, id, createdAt),
   )
 
-  applied.set(fields.email.toLowerCase(), Date.now())
+  markApplied(fields.email)
 
   return {
     ...fields,
