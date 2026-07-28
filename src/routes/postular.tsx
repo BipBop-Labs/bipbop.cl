@@ -125,7 +125,14 @@ function Postular() {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [dragging, setDragging] = useState(false)
-  const [guino, setGuino] = useState('')
+  const [guino, setGuino] = useState<{
+    texto: string
+    x: number
+    y: number
+  } | null>(null)
+
+  /** Última posición del puntero: el guiño aparece donde está mirando. */
+  const puntero = useRef<{ x: number; y: number } | null>(null)
 
   /** Lo que queremos contarle al servidor en la próxima petición. */
   const notas = useRef<Array<string>>([])
@@ -278,11 +285,32 @@ function Postular() {
     }
   }
 
-  /** Muestra el guiño un rato y lo deja anotado. */
+  useEffect(() => {
+    const mover = (e: MouseEvent) => {
+      puntero.current = { x: e.clientX, y: e.clientY }
+    }
+    window.addEventListener('mousemove', mover)
+    return () => window.removeEventListener('mousemove', mover)
+  }, [])
+
+  /** Muestra el guiño donde está el cursor y lo deja anotado. */
   const guiñar = useCallback(
     (tipo: keyof typeof GUINOS, nota: string) => {
       const opciones = GUINOS[tipo]
-      setGuino(opciones[Math.floor(Math.random() * opciones.length)])
+      const texto = opciones[Math.floor(Math.random() * opciones.length)]
+
+      // Sin mouse (móvil, o si nunca lo movió) va abajo al centro.
+      const ancho = 320
+      const alto = 120
+      const p = puntero.current
+      const x = p
+        ? Math.min(Math.max(12, p.x + 18), window.innerWidth - ancho - 12)
+        : Math.max(12, (window.innerWidth - ancho) / 2)
+      const y = p
+        ? Math.min(Math.max(12, p.y + 18), window.innerHeight - alto - 12)
+        : window.innerHeight - alto - 24
+
+      setGuino({ texto, x, y })
       notas.current.push(nota)
     },
     [],
@@ -290,7 +318,7 @@ function Postular() {
 
   useEffect(() => {
     if (!guino) return
-    const t = setTimeout(() => setGuino(''), 7000)
+    const t = setTimeout(() => setGuino(null), 7000)
     return () => clearTimeout(t)
   }, [guino])
 
@@ -441,13 +469,14 @@ function Postular() {
       {guino ? (
         <aside
           role="status"
-          onClick={() => setGuino('')}
-          className="motion-safe-opacity fixed right-6 bottom-6 z-50 max-w-[min(26rem,calc(100vw-3rem))] animate-rise cursor-pointer rounded-[4px] border border-success bg-surface px-4 py-3 text-[0.8rem] leading-[1.5] text-ink-2 opacity-0 shadow-[0_4px_20px_color-mix(in_srgb,var(--color-ink)_12%,transparent)] max-[720px]:right-3 max-[720px]:bottom-3 max-[720px]:left-3"
+          onClick={() => setGuino(null)}
+          style={{ left: guino.x, top: guino.y, width: 320 }}
+          className="motion-safe-opacity fixed z-50 flex animate-pop cursor-pointer items-start gap-3 rounded-[6px] border-2 border-success bg-success-soft px-4 py-3 text-[0.9rem] leading-[1.45] font-medium text-ink opacity-0 shadow-[0_8px_28px_color-mix(in_srgb,var(--color-ink)_22%,transparent)] max-[720px]:text-[0.95rem]"
         >
-          <span aria-hidden="true" className="mr-2">
+          <span aria-hidden="true" className="text-[1.35rem] leading-none">
             🐧
           </span>
-          {guino}
+          <span>{guino.texto}</span>
         </aside>
       ) : null}
 
