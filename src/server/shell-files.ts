@@ -15,18 +15,69 @@ export const HELP = `comandos
 export const README = `BipBop Labs, Software Engineer
 ==============================
 
-Somos tres personas en Santiago. Construimos Revi, la plataforma de
-asistentes con IA para tramitar permisos de la Cámara Chilena de la
-Construcción. Está en producción en 11 municipios, y hoy hay gente
-sacando permisos con algo que escribimos nosotros.
+Buscamos un Software Engineer con experiencia para sumarse al equipo y
+trabajar principalmente en Revi.
 
-Buscamos a alguien con experiencia de verdad, que se haga cargo de lo
-que construye, que sepa achicar un problema antes de armarle una
-arquitectura, y que ya use herramientas de IA a diario sin creerles
-todo.
+Revi es una plataforma de asistentes de IA para tramitar permisos,
+impulsada por la Cámara Chilena de la Construcción. Hoy la usan
+revisores de Direcciones de Obras y personas que presentan expedientes
+en 12 municipios.  https://ia-revi.cl
 
-Somos pocos a propósito: lo que hagas se nota, y no hay dónde esconder
-una decisión floja. Para bien y para mal.
+Somos una consultora chica: tomamos pocos proyectos y nos quedamos
+metidos hasta que funcionan. Hoy somos tres. Buscamos a alguien que
+siga mejorando el producto y lo lleve a otros organismos del Estado.
+Ahora lo estamos implementando para la Dirección General de Aguas.
+
+El trabajo
+----------
+
+Casi todos los días: mirar cómo la gente usa los asistentes, detectar
+dónde se traba y cambiar el producto esa misma semana.
+
+La parte difícil no es solo técnica. Un asistente puede responder
+perfecto y aun así no servir, si obliga a un revisor a salirse de su
+forma de trabajar. Hay que entender el flujo real, decidir qué vale la
+pena construir y simplificar hasta llegar a algo que la gente quiera
+usar de verdad.
+
+Siendo tres, no buscamos a alguien que reciba requisitos cerrados e
+implemente una parte chica. Buscamos a alguien que tome un problema mal
+definido, lo entienda, proponga una solución, la construya, la lleve a
+producción y se haga cargo de lo que pasa después.
+
+Lo que necesitas
+----------------
+
+  Python y TypeScript, con experiencia sólida.
+  Autonomía en la nube, del diseño a dejarlo funcionando.
+  IA metida en tu día a día, no como novedad.
+
+Hoy usamos GCP, FastAPI, LangGraph, ChromaDB, Next.js y Langfuse. Nada
+de eso es sagrado: ya reemplazamos buena parte de lo que usábamos al
+principio, y probablemente lo volvamos a hacer.
+
+Nos importa el ownership, la capacidad de simplificar problemas
+complejos, y el criterio para decidir cuando falta información.
+
+Acá la IA se usa todo el día para investigar, programar, revisar,
+probar y documentar. No basta con pedirle código a un modelo: tienes
+que poder explicar por qué la solución quedó así, qué alternativas
+evaluaste, qué verificaste y qué descartaste.
+
+Probablemente no sea para ti si
+-------------------------------
+
+  Prefieres requisitos cerrados.
+  Necesitas ciclos largos antes de mostrar algo.
+  Te acomoda trabajar solo en una parte acotada del sistema.
+
+Condiciones
+-----------
+
+  $2.000.000 a $2.400.000 líquidos, según experiencia y trayectoria.
+  Suscripción a Claude Max 5x.
+  100% remoto, con una daily en la mañana.
+  Ciclos de cuatro semanas: tres de desarrollo, una de cooldown.
 
 Cómo postular
 -------------
@@ -38,28 +89,28 @@ Ten a mano tu CV en PDF y el enlace a algo que hayas construido.
 Toma unos 15 minutos. No hay filtro automático, lo leemos nosotros.
 
 Con quién vas a trabajar:  cat equipo.txt
-
-Si algo se rompe, escríbenos a juan@bipbop.cl.`
+Consultas del cargo:       juan@bipbop.cl`
 
 export const EQUIPO = `3 personas, Santiago de Chile.
 
-Conoce al equipo
-----------------
-
   Juan Vargas          https://www.linkedin.com/in/v4rgas/
-                       fundador, https://v4rgas.com
   Emerson Salazar      https://www.linkedin.com/in/emerson-salazar-rubilar/
   Francisco Mackenney  https://www.linkedin.com/in/francisco-mackenney-651aa5204/
 
-Revi, 2025 a hoy, Cámara Chilena de la Construcción
-  Clara    asistente para quienes solicitan permisos
-  Norman   asistente para revisores municipales
-  en producción en 11 municipios
+Cómo trabajamos
+---------------
 
-CDT, 2026 a hoy, herramientas internas
-Colegio Santa María de Lo Cañas, 2026 a hoy, matrícula digital
+100% remoto, con una daily en la mañana. Después cada uno organiza sus
+desarrollos y se hace responsable de principio a fin. Eso no es
+trabajar solo: siempre hay alguien para revisar una decisión, pensar un
+problema contigo, o meterse a sacar adelante algo que se complicó.
 
-Más en https://bipbop.cl`
+Ciclos de cuatro semanas: tres de desarrollo e iteración de producto, y
+una de cooldown, donde construimos herramientas internas, mantenemos la
+codebase, miramos el estado del arte y mejoramos cómo trabajamos.
+
+Revi      https://ia-revi.cl
+Nosotros  https://bipbop.cl`
 
 export const AGENTS = `For agents
 ==========
