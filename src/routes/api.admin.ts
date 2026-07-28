@@ -4,6 +4,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 
 import { getCv, listApplications, redeliver } from '#/server/applications'
+import { listPendingSessions } from '#/server/shell'
 
 /**
  * Lo que consume /admin. La llave va en el cuerpo, nunca en la URL, para que
@@ -37,7 +38,11 @@ export const Route = createFileRoute('/api/admin')({
 
         switch (body.action) {
           case 'list':
-            return json({ ok: true, applications: listApplications() })
+            return json({
+              ok: true,
+              applications: listApplications(),
+              pending: listPendingSessions(),
+            })
 
           case 'cv': {
             const cv = body.id ? getCv(body.id) : undefined
@@ -53,7 +58,11 @@ export const Route = createFileRoute('/api/admin')({
           case 'retry': {
             if (!body.id) return json({ ok: false }, { status: 400 })
             const sent = await redeliver(body.id)
-            return json({ ok: sent, applications: listApplications() })
+            return json({
+              ok: sent,
+              applications: listApplications(),
+              pending: listPendingSessions(),
+            })
           }
 
           default:

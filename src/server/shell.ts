@@ -169,6 +169,52 @@ function getSession(id?: string): { session: Session; expired: boolean } {
   return { session, expired: Boolean(id) }
 }
 
+export type Pending = {
+  id: string
+  startedAt: string
+  lastSeenAt: string
+  step: number
+  steps: number
+  fullName: string
+  email: string
+  hasCv: boolean
+  written: number
+}
+
+/** Postulaciones a medio terminar, para poder rescatarlas desde /admin. */
+export function listPendingSessions(): Array<Pending> {
+  const rows = getDb()
+    .prepare(
+      `SELECT id, created_at, updated_at, state, cv_name
+       FROM sessions ORDER BY updated_at DESC`,
+    )
+    .all() as Array<{
+    id: string
+    created_at: number
+    updated_at: number
+    state: string
+    cv_name: string | null
+  }>
+
+  return rows
+    .map((row) => ({ row, state: JSON.parse(row.state) as Session }))
+    .filter(({ state }) => state.step !== null && !state.done)
+    .map(({ row, state }) => ({
+      id: row.id,
+      startedAt: new Date(row.created_at).toISOString(),
+      lastSeenAt: new Date(row.updated_at).toISOString(),
+      step: Math.min((state.step as number) + 1, STEPS.length),
+      steps: STEPS.length,
+      fullName: state.draft.fullName,
+      email: state.draft.email,
+      hasCv: Boolean(row.cv_name),
+      written:
+        state.draft.answerProject.length +
+        state.draft.answerSimplicity.length +
+        state.draft.answerAi.length,
+    }))
+}
+
 export function resetSessions() {
   sending.clear()
   getDb().exec('DELETE FROM sessions')

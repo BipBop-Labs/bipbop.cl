@@ -168,8 +168,15 @@ function Postular() {
 
   // Saludo inicial, retomando la sesión que haya quedado de antes.
   useEffect(() => {
+    // ?s=<id> retoma una postulación desde el enlace de rescate.
+    const fromLink = new URLSearchParams(location.search).get('s')
+    if (fromLink) {
+      session.current = fromLink
+      history.replaceState(null, '', location.pathname)
+    }
     try {
-      session.current = localStorage.getItem('postular') ?? undefined
+      if (fromLink) localStorage.setItem('postular', fromLink)
+      else session.current = localStorage.getItem('postular') ?? undefined
     } catch {
       /* sin localStorage se empieza de cero */
     }

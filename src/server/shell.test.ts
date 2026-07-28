@@ -5,7 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { resetState } from './applications'
 import { closeDb } from './db'
-import { completeInput, greet, resetSessions, runAttach, runShell } from './shell'
+import {
+  completeInput,
+  greet,
+  listPendingSessions,
+  resetSessions,
+  runAttach,
+  runShell,
+} from './shell'
 import { FLAG_VALUE } from './shell-files'
 
 /** PDF mínimo válido. */
@@ -327,5 +334,38 @@ describe('postulación', () => {
     const reply = await runShell(sessionId, '', IP)
     expect(reply.mode).toBe('confirm')
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('rescate desde /admin', () => {
+  it('lista las postulaciones a medio terminar con su avance', async () => {
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP)
+    await runShell(sessionId, 'Ada Lovelace', IP)
+    await runShell(sessionId, 'ada@example.com', IP)
+
+    const [p] = listPendingSessions()
+    expect(p.id).toBe(sessionId)
+    expect(p.fullName).toBe('Ada Lovelace')
+    expect(p.email).toBe('ada@example.com')
+    expect(p.step).toBe(3)
+    expect(p.steps).toBe(8)
+    expect(p.hasCv).toBe(false)
+  })
+
+  it('no muestra las que ni siquiera empezaron', () => {
+    greet() // solo abrió la página
+    expect(listPendingSessions()).toEqual([])
+  })
+
+  it('el enlace de rescate retoma donde quedó', async () => {
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP)
+    await runShell(sessionId, 'Ada Lovelace', IP)
+
+    // Es lo que hace /postular?s=<id>: saludar con esa sesión.
+    const retomada = greet(sessionId)
+    expect(text(retomada)).toContain('Retomando')
+    expect(retomada.mode).toBe('field')
   })
 })

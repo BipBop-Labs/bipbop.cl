@@ -30,6 +30,18 @@ type Application = {
   deliveryError: string | null
 }
 
+type Pending = {
+  id: string
+  startedAt: string
+  lastSeenAt: string
+  step: number
+  steps: number
+  fullName: string
+  email: string
+  hasCv: boolean
+  written: number
+}
+
 const QUESTIONS: Array<[keyof Application, string]> = [
   ['answerProject', 'Lo que construiste'],
   ['answerSimplicity', 'Ownership y simplificación'],
@@ -39,6 +51,8 @@ const QUESTIONS: Array<[keyof Application, string]> = [
 function Admin() {
   const [key, setKey] = useState('')
   const [apps, setApps] = useState<Array<Application> | null>(null)
+  const [pending, setPending] = useState<Array<Pending>>([])
+  const [copied, setCopied] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -64,8 +78,12 @@ function Admin() {
           setApps(null)
           return
         }
-        const data = (await res.json()) as { applications: Array<Application> }
+        const data = (await res.json()) as {
+          applications: Array<Application>
+          pending: Array<Pending>
+        }
         setApps(data.applications)
+        setPending(data.pending ?? [])
         sessionStorage.setItem('adminKey', adminKey)
         setKey(adminKey)
       } catch {
@@ -96,8 +114,12 @@ function Admin() {
   async function retry(app: Application) {
     setBusy(true)
     const res = await call({ action: 'retry', id: app.id }, key)
-    const data = (await res.json()) as { applications?: Array<Application> }
+    const data = (await res.json()) as {
+      applications?: Array<Application>
+      pending?: Array<Pending>
+    }
     if (data.applications) setApps(data.applications)
+    if (data.pending) setPending(data.pending)
     setBusy(false)
   }
 
@@ -155,6 +177,52 @@ function Admin() {
           </span>
         )}
       </header>
+
+      {pending.length > 0 ? (
+        <section className="mb-12">
+          <h2 className="mb-1 text-[0.62rem] tracking-[0.15em] text-ink-3 uppercase">
+            A medio terminar ({pending.length})
+          </h2>
+          <p className="mb-4 max-w-[62ch] text-[0.85rem] text-ink-3">
+            El enlace retoma la postulación donde quedó. Mándaselo solo a la
+            persona que la empezó: quien lo tenga puede seguir escribiendo por
+            ella.
+          </p>
+
+          <div className="grid gap-2">
+            {pending.map((p) => (
+              <div
+                key={p.id}
+                className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-[4px] border border-line bg-surface px-4 py-3 text-[0.85rem]"
+              >
+                <span className="text-ink">
+                  {p.fullName || <span className="text-ink-3">sin nombre</span>}
+                  {p.email ? (
+                    <span className="text-ink-2"> · {p.email}</span>
+                  ) : null}
+                </span>
+                <span className="text-ink-3">
+                  paso {p.step}/{p.steps}
+                  {p.hasCv ? ' · con CV' : ''}
+                  {p.written > 0 ? ` · ${p.written} caracteres escritos` : ''}
+                  {' · '}
+                  {new Date(p.lastSeenAt).toLocaleString('es-CL')}
+                </span>
+                <button
+                  onClick={() => {
+                    const link = `${location.origin}/postular?s=${p.id}`
+                    void navigator.clipboard.writeText(link)
+                    setCopied(p.id)
+                  }}
+                  className="cursor-pointer border-b border-success text-success"
+                >
+                  {copied === p.id ? 'copiado' : 'copiar enlace'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {apps.length === 0 ? (
         <p className="text-ink-2">Todavía no llega ninguna.</p>
