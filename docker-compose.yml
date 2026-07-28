@@ -1,10 +1,8 @@
 services:
   web:
     build: .
-    # Sin publicar puertos: el proxy de Coolify llega al contenedor por la red
-    # interna usando el EXPOSE 3000 del Dockerfile.
-    expose:
-      - "3000"
+    # Sin puertos: el proxy de Coolify llega al contenedor por la red interna
+    # usando el EXPOSE 3000 del Dockerfile.
     environment:
       - PORT=3000
       - DATA_DIR=/data

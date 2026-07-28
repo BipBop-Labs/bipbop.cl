@@ -49,21 +49,16 @@ STYLE.md               brand reference in text form
 both sides (`src/lib/application.ts`), so the client and the server can never
 disagree about what a valid application is.
 
-What happens to a submission:
-
-1. Honeypot, minimum fill time and a per-IP rate limit filter out bots.
-2. The CV is written to a **temporary folder**, re-read from disk and checked —
-   real `%PDF-` header, `%%EOF` trailer, size, and no active content
-   (`/JavaScript`, `/Launch`, `/EmbeddedFile`, `/OpenAction`).
-3. It's uploaded to the team's Discord webhook with a filename we generate,
-   never the uploaded one. The temp folder is deleted either way.
-4. Only once Discord accepted it, the record is appended to
-   `$DATA_DIR/applications.jsonl` with an id, timestamp, `status: "new"` and the
-   Discord attachment URL as the CV reference.
+What happens to a submission: the request is screened for abuse, the CV is
+validated in a temporary folder and uploaded to the team's Discord webhook, and
+only once Discord accepts it is the record appended to
+`$DATA_DIR/applications.jsonl` with an id, timestamp, `status: "new"` and the
+attachment URL as the CV reference.
 
 The PDF never stays on the server, and it's never stored in the record. If
-Discord is down nothing is written, so the candidate can retry without hitting
-the duplicate check (one application per email per 24 h).
+Discord is down nothing is written, so the candidate can retry.
+
+See `src/server/applications.ts` for the screening and validation rules.
 
 Configuration lives in `.env.example`: `DISCORD_WEBHOOK_URL` (required) and
 `DATA_DIR` (the volume holding `applications.jsonl`).
