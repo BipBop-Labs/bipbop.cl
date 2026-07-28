@@ -8,8 +8,10 @@ CSS v4, so the site ships with a server it can grow into.
 
 - `/` — studio landing page
 - `/revi` — Revi CChC, an AI assistant for building permits in Chile (product page)
+- `/postular` — Software Engineer job application form
 - `/styleguide` — browsable brand style guide
 - `/api/health` — server liveness check
+- `/api/applications` — `POST`, receives the job application
 
 ## Running it
 
@@ -21,7 +23,11 @@ pnpm dev          # http://localhost:3000
 ```sh
 pnpm build        # vite + nitro → .output/
 pnpm start        # node .output/server/index.mjs
+pnpm check        # tsc --noEmit
+pnpm test         # vitest run
 ```
+
+Copy `.env.example` to `.env` before running the application form locally.
 
 ## Layout
 
@@ -36,6 +42,31 @@ public/                served as-is: brand assets, robots.txt, sitemap.xml, llms
 scripts/               asset generation
 STYLE.md               brand reference in text form
 ```
+
+## Job applications
+
+`/postular` posts to `/api/applications`. The same validation module runs on
+both sides (`src/lib/application.ts`), so the client and the server can never
+disagree about what a valid application is.
+
+What happens to a submission:
+
+1. Honeypot, minimum fill time and a per-IP rate limit filter out bots.
+2. The CV is written to a **temporary folder**, re-read from disk and checked —
+   real `%PDF-` header, `%%EOF` trailer, size, and no active content
+   (`/JavaScript`, `/Launch`, `/EmbeddedFile`, `/OpenAction`).
+3. It's uploaded to the team's Discord webhook with a filename we generate,
+   never the uploaded one. The temp folder is deleted either way.
+4. Only once Discord accepted it, the record is appended to
+   `$DATA_DIR/applications.jsonl` with an id, timestamp, `status: "new"` and the
+   Discord attachment URL as the CV reference.
+
+The PDF never stays on the server, and it's never stored in the record. If
+Discord is down nothing is written, so the candidate can retry without hitting
+the duplicate check (one application per email per 24 h).
+
+Configuration lives in `.env.example`: `DISCORD_WEBHOOK_URL` (required) and
+`DATA_DIR` (the volume holding `applications.jsonl`).
 
 ## Adding a backend
 
@@ -61,7 +92,8 @@ docker run -p 3000:3000 bipbop
 
 On **Coolify**: create an Application from this repo, pick the *Dockerfile*
 build pack, set the port to `3000`, and point the health check at `/api/health`.
-Nothing else is required — there are no runtime environment variables.
+Then set `DISCORD_WEBHOOK_URL` and mount a persistent volume at `/data` (the
+image already defaults `DATA_DIR` to `/data`).
 
 ## Brand assets
 
