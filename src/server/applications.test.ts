@@ -301,3 +301,39 @@ describe('POST /api/admin', () => {
     expect(new Uint8Array(await cv.arrayBuffer())).toEqual(PDF)
   })
 })
+
+describe('postulaciones enormes', () => {
+  it('manda el texto como adjunto en vez de inundar el canal', async () => {
+    const fetchMock = discordOk()
+    // Lo más largo que la validación permite: 3 respuestas de 1.200.
+    const max = 'a'.repeat(1200)
+    await submit({
+      answerProject: max,
+      answerSimplicity: max,
+      answerAi: max,
+    })
+
+    // Pocos mensajes, y el texto completo viaja como archivo.
+    expect(fetchMock.mock.calls.length).toBeLessThanOrEqual(4)
+    const primero = fetchMock.mock.calls[0][1]!.body as FormData
+    const adjuntos = [...primero.keys()].filter((k) => k.startsWith('files['))
+    expect(adjuntos.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('reintenta cuando Discord pide esperar', async () => {
+    let llamadas = 0
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      llamadas += 1
+      if (llamadas === 1) {
+        return Response.json({ retry_after: 0.01 }, { status: 429 })
+      }
+      return Response.json({ id: '1', attachments: [] })
+    })
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    await submit()
+    const [app] = listApplications()
+    expect(app.deliveredAt).not.toBeNull()
+    expect(llamadas).toBeGreaterThan(1)
+  })
+})

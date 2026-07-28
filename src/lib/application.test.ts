@@ -185,3 +185,24 @@ describe('firstInvalidField', () => {
     expect(firstInvalidField({})).toBeUndefined()
   })
 })
+
+describe('largos absurdos', () => {
+  it('rechaza una URL de proyecto kilométrica', () => {
+    const enorme = `https://github.com/x/${'a'.repeat(50_000)}`
+    expect(validate({ ...validFields, project: enorme }, pdf).project).toBe(
+      'Ese enlace es demasiado largo.',
+    )
+  })
+
+  it('rechaza un GitHub kilométrico', () => {
+    const enorme = `github.com/${'a'.repeat(50_000)}`
+    expect(validate({ ...validFields, github: enorme }, pdf).github).toBeDefined()
+  })
+
+  it('rechaza un correo más largo que la RFC', () => {
+    const largo = `${'a'.repeat(250)}@example.com`
+    expect(validate({ ...validFields, email: largo }, pdf).email).toBe(
+      'Ese correo es demasiado largo.',
+    )
+  })
+})

@@ -15,6 +15,8 @@ const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
 
 /** Discord corta el mensaje en 2.000 caracteres, así que va paginado. */
 const DISCORD_LIMIT = 1900
+/** Más que esto no se pagina: el resto se manda como archivo adjunto. */
+const MAX_CHUNKS = 4
 
 /**
  * Detrás de una IP residencial o de un CGNAT puede haber un barrio entero, así
@@ -212,7 +214,12 @@ async function deliver(app: Application, cv: Uint8Array): Promise<void> {
   const webhook = process.env.DISCORD_WEBHOOK_URL
   if (!webhook) throw new Error('DISCORD_WEBHOOK_URL no está configurado')
 
-  const chunks = paginate(discordMessage(app))
+  const full = discordMessage(app)
+  const all = paginate(full)
+
+  // Si son demasiados pedazos, no inundamos el canal: va el resto adjunto.
+  const overflow = all.length > MAX_CHUNKS
+  const chunks = overflow ? all.slice(0, 1) : all
   const url = new URL(webhook)
 
   for (const [index, chunk] of chunks.entries()) {
@@ -234,13 +241,36 @@ async function deliver(app: Application, cv: Uint8Array): Promise<void> {
         new Blob([cv as BufferSource], { type: 'application/pdf' }),
         safeCvName(app.fullName),
       )
+      if (overflow) {
+        body.append(
+          'files[1]',
+          new Blob([full], { type: 'text/markdown' }),
+          `postulacion-${app.id}.md`,
+        )
+      }
     }
 
-    const res = await fetch(url, { method: 'POST', body })
-    if (!res.ok) {
-      const detail = await res.text().catch(() => '')
-      throw new Error(`webhook respondió ${res.status}: ${detail.slice(0, 300)}`)
+    await send(url, body, app.id)
+  }
+}
+
+/** Un POST al webhook, respetando el rate limit de Discord. */
+async function send(url: URL, body: FormData, id: string, intento = 1) {
+  const res = await fetch(url, { method: 'POST', body })
+
+  if (res.status === 429 && intento <= 3) {
+    const payload = (await res.json().catch(() => ({}))) as {
+      retry_after?: number
     }
+    const espera = Math.min((payload.retry_after ?? 1) * 1000, 10_000)
+    console.warn(`[applications] Discord pidió esperar ${espera}ms (${id})`)
+    await new Promise((r) => setTimeout(r, espera))
+    return send(url, body, id, intento + 1)
+  }
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(`webhook respondió ${res.status}: ${detail.slice(0, 300)}`)
   }
 }
 

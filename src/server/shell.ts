@@ -179,6 +179,15 @@ export type Pending = {
   email: string
   hasCv: boolean
   written: number
+  /** Lo que lleva escrito, para poder rescatarlo a mano si hace falta. */
+  draft: {
+    github: string
+    linkedin: string
+    project: string
+    answerProject: string
+    answerSimplicity: string
+    answerAi: string
+  }
 }
 
 /** Postulaciones a medio terminar, para poder rescatarlas desde /admin. */
@@ -212,6 +221,14 @@ export function listPendingSessions(): Array<Pending> {
         state.draft.answerProject.length +
         state.draft.answerSimplicity.length +
         state.draft.answerAi.length,
+      draft: {
+        github: state.draft.github,
+        linkedin: state.draft.linkedin,
+        project: state.draft.project,
+        answerProject: state.draft.answerProject,
+        answerSimplicity: state.draft.answerSimplicity,
+        answerAi: state.draft.answerAi,
+      },
     }))
 }
 

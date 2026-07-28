@@ -40,6 +40,14 @@ type Pending = {
   email: string
   hasCv: boolean
   written: number
+  draft: {
+    github: string
+    linkedin: string
+    project: string
+    answerProject: string
+    answerSimplicity: string
+    answerAi: string
+  }
 }
 
 const QUESTIONS: Array<[keyof Application, string]> = [
@@ -193,31 +201,65 @@ function Admin() {
             {pending.map((p) => (
               <div
                 key={p.id}
-                className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-[4px] border border-line bg-surface px-4 py-3 text-[0.85rem]"
+                className="rounded-[4px] border border-line bg-surface px-4 py-3 text-[0.85rem]"
               >
-                <span className="text-ink">
-                  {p.fullName || <span className="text-ink-3">sin nombre</span>}
-                  {p.email ? (
-                    <span className="text-ink-2"> · {p.email}</span>
-                  ) : null}
-                </span>
-                <span className="text-ink-3">
-                  paso {p.step}/{p.steps}
-                  {p.hasCv ? ' · con CV' : ''}
-                  {p.written > 0 ? ` · ${p.written} caracteres escritos` : ''}
-                  {' · '}
-                  {new Date(p.lastSeenAt).toLocaleString('es-CL')}
-                </span>
-                <button
-                  onClick={() => {
-                    const link = `${location.origin}/postular?s=${p.id}`
-                    void navigator.clipboard.writeText(link)
-                    setCopied(p.id)
-                  }}
-                  className="cursor-pointer border-b border-success text-success"
-                >
-                  {copied === p.id ? 'copiado' : 'copiar enlace'}
-                </button>
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                  <span className="text-ink">
+                    {p.fullName || (
+                      <span className="text-ink-3">sin nombre</span>
+                    )}
+                    {p.email ? (
+                      <span className="text-ink-2"> · {p.email}</span>
+                    ) : null}
+                  </span>
+                  <span className="text-ink-3">
+                    paso {p.step}/{p.steps}
+                    {p.hasCv ? ' · con CV' : ''}
+                    {p.written > 0 ? ` · ${p.written} caracteres` : ''}
+                    {' · '}
+                    {new Date(p.lastSeenAt).toLocaleString('es-CL')}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const link = `${location.origin}/postular?s=${p.id}`
+                      void navigator.clipboard.writeText(link)
+                      setCopied(p.id)
+                    }}
+                    className="cursor-pointer border-b border-success text-success"
+                  >
+                    {copied === p.id ? 'copiado' : 'copiar enlace'}
+                  </button>
+                </div>
+
+                {p.written > 0 || p.draft.project ? (
+                  <details className="mt-2 border-t border-line pt-2">
+                    <summary className="cursor-pointer text-[0.8rem] text-ink-3">
+                      Ver lo que lleva escrito
+                    </summary>
+                    <div className="mt-3 grid gap-3">
+                      {p.draft.project ? (
+                        <p className="text-ink-2">
+                          <span className="text-ink-3">proyecto: </span>
+                          {p.draft.project}
+                        </p>
+                      ) : null}
+                      {QUESTIONS.map(([field, title]) => {
+                        const value = p.draft[field as keyof typeof p.draft]
+                        if (!value) return null
+                        return (
+                          <div key={field}>
+                            <p className="mb-1 text-[0.62rem] tracking-[0.15em] text-ink-3 uppercase">
+                              {title}
+                            </p>
+                            <p className="max-w-[70ch] whitespace-pre-wrap text-ink-2">
+                              {value}
+                            </p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </details>
+                ) : null}
               </div>
             ))}
           </div>

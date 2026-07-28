@@ -4,6 +4,10 @@
  */
 
 export const MAX_ANSWER_LENGTH = 1200
+/** Tope de la RFC 5321 para un correo. */
+export const MAX_EMAIL_LENGTH = 254
+/** Una URL más larga que esto no es una URL, es un ataque. */
+export const MAX_URL_LENGTH = 2048
 export const MAX_CV_BYTES = 10 * 1024 * 1024
 
 export type ApplicationFields = {
@@ -76,6 +80,7 @@ export function normalizeUrl(value: string): string {
 }
 
 function parseUrl(value: string): URL | null {
+  if (value.length > MAX_URL_LENGTH) return null
   try {
     const url = new URL(normalizeUrl(value))
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
@@ -137,6 +142,8 @@ export function validate(fields: ApplicationFields, cv: CvMeta): Errors {
 
   const email = fields.email.trim()
   if (!email) errors.email = 'Ingresa tu correo electrónico.'
+  else if (email.length > MAX_EMAIL_LENGTH)
+    errors.email = 'Ese correo es demasiado largo.'
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email))
     errors.email = 'Ingresa un correo electrónico válido.'
 
@@ -152,6 +159,8 @@ export function validate(fields: ApplicationFields, cv: CvMeta): Errors {
 
   if (!fields.project.trim())
     errors.project = 'Comparte un enlace a un proyecto, repo o demo.'
+  else if (fields.project.length > MAX_URL_LENGTH)
+    errors.project = 'Ese enlace es demasiado largo.'
   else if (!parseUrl(fields.project))
     errors.project = 'Ingresa una URL válida.'
 
