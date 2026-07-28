@@ -1,3 +1,12 @@
 .env
+.env.*
+!.env.example
 .claude/
+proyecto-colegio-lo-canas/
+data/
 posthog-setup-report.md
+node_modules
+dist
+.nitro
+.output
+src/routeTree.gen.ts

@@ -1,0 +1,12 @@
+node_modules
+.output
+.nitro
+dist
+.git
+.claude
+.env
+proyecto-colegio-lo-canas
+scripts
+STYLE.md
+README.md
+src/routeTree.gen.ts

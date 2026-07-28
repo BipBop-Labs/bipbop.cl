@@ -2,14 +2,14 @@
 """
 Regenerate EVERY brand asset from the two vector sources + one palette:
 
-    brand/head.svg   — penguin head mark (square): THE logo, used everywhere
-    brand/body.svg   — full-body penguin, DEPRECATED as a logo; its only
+    public/brand/head.svg   — penguin head mark (square): THE logo, used everywhere
+    public/brand/body.svg   — full-body penguin, DEPRECATED as a logo; its only
                        remaining use is the landing hero raster (bipbop_logo.webp)
     (the wordmark text "BipBop Labs_" lives in the templates below)
 
-Everything the script writes lands under brand/generated/ (stickers 01–04
+Everything the script writes lands under public/brand/generated/ (stickers 01–04
 incl. on-black/on-white prints, wordmark, OG image, LinkedIn banner/avatar,
-GitHub avatar, favicon svg+ico, and the site's bipbop_logo.webp) — the brand/
+GitHub avatar, favicon svg+ico, and the site's bipbop_logo.webp) — the public/brand/
 top level holds only the sources.
 
 Tweak PALETTE below (or pass --palette name) and re-run:
@@ -30,7 +30,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-BRAND = ROOT / "brand"
+BRAND = ROOT / "public" / "brand"
 GEN = BRAND / "generated"
 SOCIAL = GEN / "social"
 STICKERS = GEN / "stickers"
@@ -381,7 +381,7 @@ def render_favicon(fmt: dict[str, str]) -> None:
             rsvg(svg, png, w=size, h=size)
             pngs.append(str(png))
         subprocess.run(["magick", *pngs, str(GEN / "favicon.ico")], check=True)
-    print("wrote brand/generated/favicon.svg + brand/generated/favicon.ico")
+    print("wrote public/brand/generated/favicon.svg + public/brand/generated/favicon.ico")
 
 
 # --- Pipeline -------------------------------------------------------------------
@@ -448,7 +448,7 @@ def render(palette_name: str) -> None:
         png = Path(tmp) / "logo.png"
         rsvg(BODY_SRC, png, h=3922)
         subprocess.run(["magick", str(png), str(GEN / "bipbop_logo.webp")], check=True)
-    print("wrote brand/generated/bipbop_logo.webp")
+    print("wrote public/brand/generated/bipbop_logo.webp")
 
 
 def main() -> None:
