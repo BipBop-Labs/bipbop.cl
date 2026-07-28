@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { resetState } from './applications'
-import { closeDb } from './db'
+import { closeDb, getDb } from './db'
 import {
   completeInput,
   greet,
@@ -367,5 +367,55 @@ describe('rescate desde /admin', () => {
     const retomada = greet(sessionId)
     expect(text(retomada)).toContain('Retomando')
     expect(retomada.mode).toBe('field')
+  })
+})
+
+describe('sesiones de una versión anterior del cuestionario', () => {
+  /** Escribe a mano una sesión con el índice de otro flujo, como pasó en prod. */
+  function plantSession(state: Record<string, unknown>) {
+    const id = 'vieja-0000-0000-0000-000000000000'
+    getDb()
+      .prepare(
+        `INSERT INTO sessions (id, created_at, updated_at, state, cv, cv_name)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .run(id, Date.now() - 600_000, Date.now(), JSON.stringify(state), PDF, 'cv.pdf')
+    return id
+  }
+
+  const draftCasi = {
+    fullName: 'Yhonatan',
+    email: 'y@example.com',
+    github: 'yhona',
+    linkedin: 'yhona',
+    project: 'https://github.com/y/repulink',
+    answerProject: 'Construí RepuLink.',
+    answerSimplicity: 'Simplifiqué el pedido.',
+    answerAi: '', // nunca alcanzó a responderla
+  }
+
+  it('vuelve a preguntar lo que quedó sin responder', async () => {
+    // El índice dice "ya terminaste", pero falta la pregunta de IA.
+    const id = plantSession({ step: 8, draft: draftCasi, flag: false, done: false })
+
+    const retomada = greet(id)
+    expect(retomada.mode).toBe('field')
+    expect(text(retomada)).toContain('Trabajo con IA')
+  })
+
+  it('no deja enviar una postulación incompleta', async () => {
+    const fetchMock = discordOk()
+    const id = plantSession({ step: 8, draft: draftCasi, flag: false, done: false })
+
+    // Enter vacío no envía: primero exige la respuesta que falta.
+    const intento = await runShell(id, '', IP)
+    expect(text(intento)).toContain('trabajo con IA')
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    // Respondiendo la que faltaba, ahora sí sale.
+    await runShell(id, 'Uso IA a diario y verifico todo.', IP)
+    const enviada = await runShell(id, '', IP)
+    expect(enviada.mode).toBe('done')
+    expect(fetchMock).toHaveBeenCalled()
   })
 })

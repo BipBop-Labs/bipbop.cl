@@ -142,16 +142,18 @@ function getSession(id?: string): { session: Session; expired: boolean } {
       Session,
       'step' | 'draft' | 'flag' | 'done'
     >
-    return {
-      session: {
-        id: row.id,
-        createdAt: row.created_at,
-        ...state,
-        cv: row.cv ? { bytes: row.cv, name: row.cv_name ?? 'cv.pdf' } : null,
-        sending: sending.has(row.id),
-      },
-      expired: false,
+    const session: Session = {
+      id: row.id,
+      createdAt: row.created_at,
+      ...state,
+      cv: row.cv ? { bytes: row.cv, name: row.cv_name ?? 'cv.pdf' } : null,
+      sending: sending.has(row.id),
     }
+    // No confiamos en el índice guardado: puede ser de otra versión del flujo.
+    if (session.step !== null && !session.done) {
+      session.step = firstUnanswered(session)
+    }
+    return { session, expired: false }
   }
 
   const session: Session = {
@@ -488,6 +490,23 @@ function runCommand(session: Session, input: string): Array<Line> {
   }
 }
 
+/**
+ * El paso real es el primero que todavía no está respondido, no el número que
+ * quedó guardado. Así una sesión vieja sobrevive a que cambie el cuestionario:
+ * si se agregó o se movió una pregunta, vuelve a pedir la que falta.
+ */
+function firstUnanswered(session: Session): number {
+  for (let i = 0; i < STEPS.length; i++) {
+    const step = STEPS[i]
+    if (step.kind === 'file') {
+      if (!session.cv) return i
+      continue
+    }
+    if (!session.draft[step.name as keyof ApplicationFields]?.trim()) return i
+  }
+  return STEPS.length
+}
+
 /** Pasa al siguiente dato, saltando el CV si ya lo tenemos. */
 function advance(session: Session): Array<Line> {
   session.step = (session.step as number) + 1
@@ -580,6 +599,16 @@ async function send(session: Session, ip: string): Promise<Array<Line>> {
     github: fromHandle(session.draft.github, GITHUB_PREFIX),
     linkedin: fromHandle(session.draft.linkedin, LINKEDIN_PREFIX),
   })
+
+  // Nunca se envía a medias: si falta algo, se vuelve a esa pregunta.
+  const faltante = firstUnanswered(session)
+  if (faltante < STEPS.length) {
+    session.step = faltante
+    return [
+      ...err('Falta responder esto antes de enviar.'),
+      ...askCurrent(session),
+    ]
+  }
 
   if (isDuplicate(fields.email)) {
     return err('Ya recibimos una postulación con ese correo.')
