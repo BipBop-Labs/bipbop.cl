@@ -3,7 +3,7 @@
 !.env.example
 .claude/
 proyecto-colegio-lo-canas/
-data/
+/data/
 posthog-setup-report.md
 node_modules
 dist
