@@ -94,7 +94,7 @@ export const Route = createFileRoute('/api/applications')({
           )
         }
 
-        if (await isDuplicate(fields.email)) {
+        if (isDuplicate(fields.email)) {
           return json(
             {
               ok: false,

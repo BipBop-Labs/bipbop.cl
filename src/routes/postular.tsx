@@ -4,10 +4,14 @@ import { useEffect, useRef, useState } from 'react'
 import {
   EMPTY_FIELDS,
   FIELD_ORDER,
+  GITHUB_PREFIX,
+  LINKEDIN_PREFIX,
   MAX_ANSWER_LENGTH,
   firstInvalidField,
+  fromHandle,
   hasErrors,
   normalizeFields,
+  toHandle,
   validate,
 } from '#/lib/application'
 import type { ApplicationFields, Errors, FieldName } from '#/lib/application'
@@ -115,8 +119,17 @@ function Postular() {
     event.preventDefault()
     if (status === 'submitting') return // sin envíos duplicados
 
-    const normalized = normalizeFields(fields)
-    setFields(normalized)
+    // Los perfiles se escriben como handle; aquí se vuelven URL completa.
+    const handles = {
+      github: toHandle(fields.github, GITHUB_PREFIX),
+      linkedin: toHandle(fields.linkedin, LINKEDIN_PREFIX),
+    }
+    const normalized = normalizeFields({
+      ...fields,
+      github: fromHandle(fields.github, GITHUB_PREFIX),
+      linkedin: fromHandle(fields.linkedin, LINKEDIN_PREFIX),
+    })
+    setFields({ ...normalized, ...handles })
 
     const found = validate(
       normalized,
@@ -182,9 +195,9 @@ function Postular() {
         <p className="mb-4 text-[0.62rem] tracking-[0.15em] text-success uppercase">
           Estamos contratando · Santiago, Chile
         </p>
-        <h1 className="max-w-[16ch] font-display text-[clamp(2.6rem,7vw,4.5rem)] leading-[0.98] font-normal tracking-[-0.02em]">
+        <h1 className="max-w-[18ch] text-[clamp(2.1rem,5.5vw,3.4rem)] leading-[1.08] font-semibold tracking-[-0.02em]">
           Software Engineer{' '}
-          <em className="text-success italic">en BipBop Labs</em>
+          <em className="text-success not-italic">en BipBop Labs</em>
         </h1>
       </header>
 
@@ -210,7 +223,7 @@ function Postular() {
 
         <span
           aria-hidden="true"
-          className="motion-safe-opacity block h-28 w-28 animate-rise self-start bg-[url('/brand/generated/bipbop_logo.webp')] bg-contain bg-center bg-no-repeat opacity-0 [animation-delay:0.2s] max-[720px]:hidden"
+          className="motion-safe-opacity block h-28 w-28 animate-rise self-start bg-[url('/brand/generated/stickers/01-logo.svg')] bg-contain bg-center bg-no-repeat opacity-0 [animation-delay:0.2s] max-[720px]:hidden"
         />
       </div>
 
@@ -250,7 +263,8 @@ function Postular() {
             error={errors.github}
             onChange={set('github')}
             refs={refs}
-            placeholder="github.com/tu-usuario"
+            prefix={GITHUB_PREFIX}
+            placeholder="tu-usuario"
             inputMode="url"
           />
           <Field
@@ -260,7 +274,8 @@ function Postular() {
             error={errors.linkedin}
             onChange={set('linkedin')}
             refs={refs}
-            placeholder="linkedin.com/in/tu-perfil"
+            prefix={LINKEDIN_PREFIX}
+            placeholder="tu-perfil"
             inputMode="url"
           />
           <div className="min-[721px]:col-span-2">
@@ -371,6 +386,7 @@ function Field({
   onChange,
   refs,
   hint,
+  prefix,
   placeholder,
   type = 'text',
   autoComplete,
@@ -383,6 +399,7 @@ function Field({
   onChange: (value: string) => void
   refs: React.RefObject<Partial<Record<FieldName, HTMLElement | null>>>
   hint?: string
+  prefix?: string
   placeholder?: string
   type?: string
   autoComplete?: string
@@ -390,6 +407,25 @@ function Field({
 }) {
   const errorId = `${name}-error`
   const hintId = `${name}-hint`
+
+  const input = (
+    <input
+      id={name}
+      name={name}
+      type={type}
+      value={value}
+      placeholder={placeholder}
+      autoComplete={autoComplete}
+      inputMode={inputMode}
+      onChange={(e) => onChange(e.target.value)}
+      ref={(el) => {
+        refs.current[name] = el
+      }}
+      aria-invalid={Boolean(error)}
+      aria-describedby={error ? errorId : hint ? hintId : undefined}
+      className={prefix ? `${INPUT} min-w-0 flex-1 border-b-0` : INPUT}
+    />
+  )
 
   return (
     <div className="group">
@@ -399,22 +435,24 @@ function Field({
       >
         {label}
       </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        value={value}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        inputMode={inputMode}
-        onChange={(e) => onChange(e.target.value)}
-        ref={(el) => {
-          refs.current[name] = el
-        }}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? errorId : hint ? hintId : undefined}
-        className={INPUT}
-      />
+      {prefix ? (
+        // El dominio va impreso: se escribe solo el handle.
+        <div
+          className={`flex items-baseline border-b transition-colors group-focus-within:border-success ${
+            error ? 'border-danger' : 'border-line'
+          }`}
+        >
+          <span
+            aria-hidden="true"
+            className="py-2 text-[1.05rem] text-ink-3 select-none"
+          >
+            {prefix}
+          </span>
+          {input}
+        </div>
+      ) : (
+        input
+      )}
       {error ? (
         <p className={ERROR} id={errorId}>
           {error}
@@ -513,7 +551,7 @@ function Answer({
     <li className="group grid gap-x-6 gap-y-3 min-[721px]:grid-cols-[3.5rem_1fr]">
       <span
         aria-hidden="true"
-        className="font-display text-[2.5rem] leading-none text-line transition-colors group-focus-within:text-success max-[720px]:text-[1.75rem]"
+        className="text-[1.6rem] leading-none font-semibold tabular-nums text-line transition-colors group-focus-within:text-success max-[720px]:text-[1.2rem]"
       >
         {String(index).padStart(2, '0')}
       </span>
@@ -577,14 +615,14 @@ function Success() {
     <main className="mx-auto flex min-h-[70vh] max-w-[820px] flex-col justify-center px-6 py-24 leading-[1.65]">
       <span
         aria-hidden="true"
-        className="motion-safe-opacity mb-8 block h-24 w-24 animate-rise bg-[url('/brand/generated/bipbop_logo.webp')] bg-contain bg-center bg-no-repeat opacity-0"
+        className="motion-safe-opacity mb-8 block h-24 w-24 animate-rise bg-[url('/brand/generated/stickers/01-logo.svg')] bg-contain bg-center bg-no-repeat opacity-0"
       />
       <h1
-        className="motion-safe-opacity mb-6 max-w-[14ch] animate-rise font-display text-[clamp(2.6rem,7vw,4.5rem)] leading-[0.98] font-normal tracking-[-0.02em] opacity-0 [animation-delay:0.1s] focus:outline-none"
+        className="motion-safe-opacity mb-6 max-w-[16ch] animate-rise text-[clamp(2.1rem,5.5vw,3.4rem)] leading-[1.08] font-semibold tracking-[-0.02em] opacity-0 [animation-delay:0.1s] focus:outline-none"
         tabIndex={-1}
         ref={(el) => el?.focus()}
       >
-        Postulación <em className="text-success italic">recibida</em>
+        Postulación <em className="text-success not-italic">recibida</em>
       </h1>
       <p className="motion-safe-opacity max-w-[58ch] animate-rise text-[1.15rem] leading-[1.55] text-ink-2 opacity-0 [animation-delay:0.18s]">
         Gracias por postular a BipBop Labs. Revisaremos tu experiencia y los

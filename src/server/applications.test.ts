@@ -1,11 +1,10 @@
-import { mkdtemp, readFile, readdir } from 'node:fs/promises'
+import { readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { EMPTY_FIELDS } from '#/lib/application'
 import { Route } from '#/routes/api.applications'
-import { resetRateLimit } from './applications'
+import { resetState } from './applications'
 
 const POST = (
   Route.options.server!.handlers as unknown as {
@@ -70,22 +69,10 @@ function submit(
   })
 }
 
-let dir: string
-
-beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), 'bipbop-apps-'))
-  process.env.DATA_DIR = dir
-  process.env.DISCORD_WEBHOOK_URL = WEBHOOK
-  resetRateLimit()
-})
-
-afterEach(() => {
-  vi.restoreAllMocks()
-})
-
-async function storedRecords() {
-  const raw = await readFile(join(dir, 'applications.jsonl'), 'utf8')
-  return raw.split('\n').filter(Boolean).map((l) => JSON.parse(l))
+/** Lo que efectivamente se mandó al webhook en la última llamada. */
+function lastUpload(fetchMock: ReturnType<typeof discordOk>) {
+  const [url, init] = fetchMock.mock.calls.at(-1)!
+  return { url: String(url), form: init!.body as FormData }
 }
 
 async function tempCvDirs() {
@@ -93,61 +80,56 @@ async function tempCvDirs() {
   return entries.filter((name) => name.startsWith('bipbop-cv-'))
 }
 
+beforeEach(() => {
+  process.env.DISCORD_WEBHOOK_URL = WEBHOOK
+  resetState()
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
 describe('POST /api/applications', () => {
-  it('entrega la postulación y guarda el registro', async () => {
-    discordOk()
+  it('entrega la postulación completa a Discord', async () => {
+    const fetchMock = discordOk()
     const res = await submit()
+
     expect(res.status).toBe(200)
     expect(await res.json()).toMatchObject({ ok: true })
-
-    const [record] = await storedRecords()
-    expect(record).toMatchObject({
-      fullName: 'Ada Lovelace',
-      email: 'ada@example.com',
-      github: 'https://github.com/ada',
-      status: 'new',
-    })
-    expect(record.id).toBeTruthy()
-    expect(Date.parse(record.createdAt)).not.toBeNaN()
-
-    // El CV vive en Discord, no en el registro ni en el servidor.
-    expect(record.cv).toMatchObject({
-      url: 'https://cdn.discord.test/cv.pdf',
-      messageId: '123456789',
-      originalName: 'cv.pdf',
-    })
-    expect(JSON.stringify(record)).not.toContain('%PDF')
-  })
-
-  it('borra la carpeta temporal del CV', async () => {
-    discordOk()
-    const before = await tempCvDirs()
-    await submit()
-    expect(await tempCvDirs()).toEqual(before)
-  })
-
-  it('sube el PDF al webhook con un nombre que ponemos nosotros', async () => {
-    const fetchMock = discordOk()
-    await submit()
-
     expect(fetchMock).toHaveBeenCalledOnce()
-    const [url, init] = fetchMock.mock.calls[0]
-    expect(String(url)).toContain(WEBHOOK)
-    expect(String(url)).toContain('wait=true')
 
-    const sent = init!.body as FormData
-    expect(String(sent.get('payload_json'))).toContain('ada@example.com')
-    const attachment = sent.get('files[0]') as File
+    const { url, form } = lastUpload(fetchMock)
+    expect(url).toContain(WEBHOOK)
+    expect(url).toContain('wait=true') // necesario para recibir el adjunto
+
+    // El mensaje ES el registro: lleva los datos, el estado y un id.
+    const payload = String(form.get('payload_json'))
+    expect(payload).toContain('Ada Lovelace')
+    expect(payload).toContain('ada@example.com')
+    expect(payload).toContain('https://github.com/ada')
+    expect(payload).toContain('https://linkedin.com/in/ada')
+    expect(payload).toContain('Construí el motor.')
+    expect(payload).toContain('new')
+    expect(payload).toMatch(/[0-9a-f]{8}-[0-9a-f]{4}/) // el id
+
+    const attachment = form.get('files[0]') as File
     expect(attachment).toBeInstanceOf(Blob)
-    expect(attachment.name).toBe('cv-ada-lovelace.pdf')
+    expect(attachment.name).toBe('cv-ada-lovelace.pdf') // nunca el nombre subido
   })
 
-  it('normaliza los enlaces sin esquema', async () => {
+  it('no deja rastro del CV en el servidor', async () => {
     discordOk()
+    await submit()
+    expect(await tempCvDirs()).toEqual([])
+  })
+
+  it('normaliza los enlaces sin esquema antes de enviarlos', async () => {
+    const fetchMock = discordOk()
     await submit({ github: 'github.com/ada', project: 'ada.dev/engine' })
-    const [record] = await storedRecords()
-    expect(record.github).toBe('https://github.com/ada')
-    expect(record.project).toBe('https://ada.dev/engine')
+
+    const payload = String(lastUpload(fetchMock).form.get('payload_json'))
+    expect(payload).toContain('https://github.com/ada')
+    expect(payload).toContain('https://ada.dev/engine')
   })
 
   it('devuelve 400 con los errores por campo', async () => {
@@ -163,7 +145,7 @@ describe('POST /api/applications', () => {
   })
 
   it('rechaza un archivo que no es PDF de verdad', async () => {
-    discordOk()
+    const fetchMock = discordOk()
     const res = await submit(
       {},
       {
@@ -174,6 +156,7 @@ describe('POST /api/applications', () => {
     )
     expect(res.status).toBe(400)
     expect((await res.json()).errors.cv).toBeDefined()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('rechaza un PDF con contenido activo', async () => {
@@ -190,22 +173,26 @@ describe('POST /api/applications', () => {
   })
 
   it('rechaza el mismo correo dos veces', async () => {
-    discordOk()
+    const fetchMock = discordOk()
     expect((await submit()).status).toBe(200)
-    const res = await submit()
+
+    const res = await submit({ email: 'ADA@example.com' }) // sin distinguir mayúsculas
     expect(res.status).toBe(409)
-    expect(await storedRecords()).toHaveLength(1)
+    expect(fetchMock).toHaveBeenCalledOnce()
   })
 
   it('descarta los envíos que caen en el honeypot', async () => {
+    const fetchMock = discordOk()
     const res = await submit({ website: 'https://spam.example' })
     expect(res.status).toBe(200)
-    await expect(storedRecords()).rejects.toThrow() // no se guardó nada
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('rechaza los envíos instantáneos', async () => {
+    const fetchMock = discordOk()
     const res = await submit({ startedAt: String(Date.now()) })
     expect(res.status).toBe(400)
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('limita la cantidad de envíos por IP', async () => {
@@ -215,13 +202,16 @@ describe('POST /api/applications', () => {
     expect(res.status).toBe(429)
   })
 
-  it('no guarda nada si la entrega falla, para que se pueda reintentar', async () => {
+  it('deja reintentar si la entrega falla', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('caído'))
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const res = await submit()
-    expect(res.status).toBe(502)
-    await expect(storedRecords()).rejects.toThrow()
+    expect((await submit()).status).toBe(502)
     expect(await tempCvDirs()).toEqual([])
+
+    // No quedó marcado como postulado: el mismo correo puede volver a intentar.
+    vi.restoreAllMocks()
+    discordOk()
+    expect((await submit()).status).toBe(200)
   })
 })

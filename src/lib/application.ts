@@ -45,6 +45,27 @@ export const EMPTY_FIELDS: ApplicationFields = {
   answerAi: '',
 }
 
+/** Los perfiles se piden por handle: el dominio va impreso en el formulario. */
+export const GITHUB_PREFIX = 'github.com/'
+export const LINKEDIN_PREFIX = 'linkedin.com/in/'
+
+/**
+ * Deja solo el handle. Tolera que peguen la URL completa (con o sin esquema,
+ * con www o con subdominio de país) en vez de escribir el usuario.
+ */
+export function toHandle(value: string, prefix: string): string {
+  let rest = value.trim().replace(/^https?:\/\//i, '')
+  const at = rest.toLowerCase().indexOf(prefix.toLowerCase())
+  if (at !== -1) rest = rest.slice(at + prefix.length)
+  return rest.replace(/^\/+/, '').replace(/\/+$/, '')
+}
+
+/** Vuelve a armar la URL completa a partir del handle. */
+export function fromHandle(value: string, prefix: string): string {
+  const handle = toHandle(value, prefix)
+  return handle ? `https://${prefix}${handle}` : ''
+}
+
 /** Antepone https:// cuando el usuario pega un enlace sin esquema. */
 export function normalizeUrl(value: string): string {
   const trimmed = value.trim()

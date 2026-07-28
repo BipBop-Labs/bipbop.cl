@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest'
 
 import {
   EMPTY_FIELDS,
+  GITHUB_PREFIX,
+  LINKEDIN_PREFIX,
   MAX_ANSWER_LENGTH,
   MAX_CV_BYTES,
   firstInvalidField,
+  fromHandle,
   normalizeFields,
   normalizeUrl,
+  toHandle,
   validate,
   validateCv,
 } from './application'
@@ -37,6 +41,34 @@ describe('normalizeUrl', () => {
 
   it('devuelve vacío para un valor vacío', () => {
     expect(normalizeUrl('   ')).toBe('')
+  })
+})
+
+describe('toHandle / fromHandle', () => {
+  it('arma la URL desde el handle que se escribe en el formulario', () => {
+    expect(fromHandle('ada', GITHUB_PREFIX)).toBe('https://github.com/ada')
+    expect(fromHandle('ada', LINKEDIN_PREFIX)).toBe(
+      'https://linkedin.com/in/ada',
+    )
+  })
+
+  it('tolera que peguen la URL completa en vez del handle', () => {
+    for (const pasted of [
+      'https://github.com/ada',
+      'github.com/ada',
+      'https://www.github.com/ada/',
+      'ada',
+    ]) {
+      expect(fromHandle(pasted, GITHUB_PREFIX)).toBe('https://github.com/ada')
+    }
+    expect(fromHandle('https://cl.linkedin.com/in/ada', LINKEDIN_PREFIX)).toBe(
+      'https://linkedin.com/in/ada',
+    )
+  })
+
+  it('devuelve vacío cuando no hay handle', () => {
+    expect(fromHandle('   ', GITHUB_PREFIX)).toBe('')
+    expect(toHandle('github.com/', GITHUB_PREFIX)).toBe('')
   })
 })
 

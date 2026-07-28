@@ -49,19 +49,20 @@ STYLE.md               brand reference in text form
 both sides (`src/lib/application.ts`), so the client and the server can never
 disagree about what a valid application is.
 
-What happens to a submission: the request is screened for abuse, the CV is
-validated in a temporary folder and uploaded to the team's Discord webhook, and
-only once Discord accepts it is the record appended to
-`$DATA_DIR/applications.jsonl` with an id, timestamp, `status: "new"` and the
-attachment URL as the CV reference.
+**Discord is the source of truth.** The server stores nothing: the request is
+screened for abuse, the CV is validated inside a temporary folder and uploaded
+to the team's webhook, and the message itself carries the whole application —
+fields, an id, a timestamp and `status: new`. The temp folder is deleted either
+way, so the PDF never stays on disk. If Discord is down nothing is recorded and
+the candidate can simply retry.
 
-The PDF never stays on the server, and it's never stored in the record. If
-Discord is down nothing is written, so the candidate can retry.
+Spam and duplicate protection (honeypot, fill time, per-IP rate limit, one
+application per email per 24 h) lives in memory, so it resets on restart. That's
+deliberate — it's a brake, not a record.
 
 See `src/server/applications.ts` for the screening and validation rules.
 
-Configuration lives in `.env.example`: `DISCORD_WEBHOOK_URL` (required) and
-`DATA_DIR` (the volume holding `applications.jsonl`).
+The only configuration is `DISCORD_WEBHOOK_URL`; see `.env.example`.
 
 ## Adding a backend
 
@@ -87,8 +88,7 @@ docker run -p 3000:3000 bipbop
 
 On **Coolify**: create an Application from this repo, pick the *Dockerfile*
 build pack, set the port to `3000`, and point the health check at `/api/health`.
-Then set `DISCORD_WEBHOOK_URL` and mount a persistent volume at `/data` (the
-image already defaults `DATA_DIR` to `/data`).
+The only environment variable is `DISCORD_WEBHOOK_URL`; no volumes needed.
 
 ## Brand assets
 

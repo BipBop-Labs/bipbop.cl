@@ -1,39 +1,34 @@
 import { randomUUID } from 'node:crypto'
-import { appendFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 
 import type { ApplicationFields } from '#/lib/application'
 import { inspectPdf, safeCvName } from './pdf'
 
 /**
- * El CV nunca se queda en el servidor: se escribe en una carpeta temporal, se
- * verifica que sea un PDF sano, se sube a Discord y la carpeta se borra. Lo
- * único que persiste es el registro en JSONL, con el enlace de Discord como
- * referencia al archivo.
+ * Discord es la fuente de verdad: la postulación completa, con el CV adjunto,
+ * vive en el canal del equipo. El servidor no guarda nada — el PDF pasa por una
+ * carpeta temporal que se borra apenas se sube.
  */
 
 const DEDUPE_WINDOW_MS = 24 * 60 * 60 * 1000
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
 const RATE_LIMIT_MAX = 5
 
-export type StoredApplication = ApplicationFields & {
+export type Application = ApplicationFields & {
   id: string
   createdAt: string
   status: 'new'
   cv: { url: string; messageId: string; originalName: string; size: number }
 }
 
-function dataDir(): string {
-  return process.env.DATA_DIR || './data'
-}
-
-function recordsPath(): string {
-  return join(dataDir(), 'applications.jsonl')
-}
-
-/** Ventana deslizante en memoria; suficiente para un servidor de un proceso. */
+/**
+ * Ventanas deslizantes en memoria. Se pierden al reiniciar, y está bien: son
+ * un freno para bots y dedos apurados, no un registro.
+ */
 const hits = new Map<string, Array<number>>()
+const applied = new Map<string, number>()
 
 export function checkRateLimit(ip: string, now = Date.now()): boolean {
   const recent = (hits.get(ip) ?? []).filter(
@@ -48,33 +43,14 @@ export function checkRateLimit(ip: string, now = Date.now()): boolean {
   return true
 }
 
-export function resetRateLimit() {
+export function isDuplicate(email: string, now = Date.now()): boolean {
+  const last = applied.get(email.toLowerCase())
+  return last !== undefined && now - last < DEDUPE_WINDOW_MS
+}
+
+export function resetState() {
   hits.clear()
-}
-
-async function readRecords(): Promise<Array<StoredApplication>> {
-  try {
-    const raw = await readFile(recordsPath(), 'utf8')
-    return raw
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => JSON.parse(line) as StoredApplication)
-  } catch {
-    return []
-  }
-}
-
-/** true si ese correo ya postuló dentro de la ventana de deduplicación. */
-export async function isDuplicate(
-  email: string,
-  now = Date.now(),
-): Promise<boolean> {
-  const records = await readRecords()
-  return records.some(
-    (r) =>
-      r.email === email.toLowerCase() &&
-      now - Date.parse(r.createdAt) < DEDUPE_WINDOW_MS,
-  )
+  applied.clear()
 }
 
 export class CvRejected extends Error {}
@@ -123,7 +99,9 @@ async function deliverCv(
 
     const res = await fetch(url, { method: 'POST', body })
     if (res.status === 413) {
-      throw new CvRejected('El PDF es demasiado pesado para enviarlo. Intenta con uno más liviano.')
+      throw new CvRejected(
+        'El PDF es demasiado pesado para enviarlo. Intenta con uno más liviano.',
+      )
     }
     if (!res.ok) {
       throw new DeliveryFailed(`webhook respondió ${res.status}`)
@@ -133,16 +111,18 @@ async function deliverCv(
       id: string
       attachments?: Array<{ url: string }>
     }
-    return {
-      id: payload.id,
-      url: payload.attachments?.[0]?.url ?? '',
-    }
+    return { id: payload.id, url: payload.attachments?.[0]?.url ?? '' }
   } finally {
     await rm(dir, { recursive: true, force: true })
   }
 }
 
-function discordMessage(fields: ApplicationFields, id: string): string {
+/** El mensaje ES el registro: lleva todo, incluidos id, fecha y estado. */
+function discordMessage(
+  fields: ApplicationFields,
+  id: string,
+  createdAt: string,
+): string {
   const trim = (text: string) =>
     text.length > 900 ? `${text.slice(0, 900)}…` : text
 
@@ -153,38 +133,42 @@ function discordMessage(fields: ApplicationFields, id: string): string {
     `LinkedIn: ${fields.linkedin}`,
     `Proyecto: ${fields.project}`,
     '',
-    '**Proyecto compartido**',
+    '**Lo que construiste**',
     trim(fields.answerProject),
     '',
-    '**Simplificación**',
+    '**Ownership y simplificación**',
     trim(fields.answerSimplicity),
     '',
-    '**Uso de IA**',
+    '**Trabajo con IA**',
     trim(fields.answerAi),
     '',
-    `\`${id}\``,
+    `\`new\` · \`${id}\` · ${createdAt}`,
   ].join('\n')
 }
 
 /**
- * Entrega la postulación y deja el registro. Si Discord falla no se guarda
- * nada: preferimos que la persona reintente antes que perder su CV.
+ * Entrega la postulación a Discord. Si falla no se marca nada, así la persona
+ * puede reintentar sin chocar con la deduplicación.
  */
 export async function submitApplication(
   fields: ApplicationFields,
   cv: { bytes: Uint8Array; name: string },
-): Promise<StoredApplication> {
+): Promise<Application> {
   const id = randomUUID()
+  const createdAt = new Date().toISOString()
+
   const attachment = await deliverCv(
     cv.bytes,
     fields,
-    discordMessage(fields, id),
+    discordMessage(fields, id, createdAt),
   )
 
-  const record: StoredApplication = {
+  applied.set(fields.email.toLowerCase(), Date.now())
+
+  return {
     ...fields,
     id,
-    createdAt: new Date().toISOString(),
+    createdAt,
     status: 'new',
     cv: {
       url: attachment.url,
@@ -193,8 +177,4 @@ export async function submitApplication(
       size: cv.bytes.byteLength,
     },
   }
-
-  await mkdir(dirname(recordsPath()), { recursive: true })
-  await appendFile(recordsPath(), `${JSON.stringify(record)}\n`, 'utf8')
-  return record
 }
