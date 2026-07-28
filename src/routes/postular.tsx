@@ -15,6 +15,23 @@ export const Route = createFileRoute('/postular')({
       { property: 'og:type', content: 'website' },
       { property: 'og:title', content: 'Postula a BipBop Labs' },
       { property: 'og:url', content: 'https://bipbop.cl/postular' },
+      { property: 'og:image', content: 'https://bipbop.cl/brand/og.png' },
+      { property: 'og:image:width', content: '1200' },
+      { property: 'og:image:height', content: '630' },
+      { property: 'og:image:type', content: 'image/png' },
+      {
+        property: 'og:image:alt',
+        content: 'Un pingüino programando frente a un notebook',
+      },
+      { property: 'og:locale', content: 'es_CL' },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: 'Postula a BipBop Labs' },
+      {
+        name: 'twitter:description',
+        content:
+          'Software Engineer con experiencia, ownership y uso habitual de IA. La postulación se hace desde una terminal.',
+      },
+      { name: 'twitter:image', content: 'https://bipbop.cl/brand/og.png' },
       // Para agentes, no para personas: la vía documentada sin pasar por la terminal.
       { name: 'ai-agent-endpoint', content: 'GET https://bipbop.cl/api/applications' },
     ],

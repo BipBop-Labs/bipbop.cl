@@ -515,3 +515,28 @@ describe('enlaces del mensaje', () => {
     expect(discord.text()).not.toContain('ver cómo lo llenó')
   })
 })
+
+describe('el canal se mantiene limpio', () => {
+  it('pide a Discord que no previsualice los enlaces', async () => {
+    const discord = fakeDiscord()
+    await submit()
+
+    // Cada mensaje, no solo el primero.
+    for (const [, init] of discord.mock.mock.calls) {
+      const payload = JSON.parse(
+        String((init!.body as FormData).get('payload_json')),
+      )
+      expect(payload.flags & 4).toBe(4) // SUPPRESS_EMBEDS
+    }
+  })
+
+  it('sigue notificando: no silencia el mensaje', async () => {
+    const discord = fakeDiscord()
+    await submit()
+
+    const payload = JSON.parse(
+      String((discord.mock.mock.calls[0][1]!.body as FormData).get('payload_json')),
+    )
+    expect(payload.flags & 4096).toBe(0) // SUPPRESS_NOTIFICATIONS
+  })
+})

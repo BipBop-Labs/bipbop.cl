@@ -24,14 +24,14 @@ export const Route = createFileRoute('/')({
       { property: 'og:url', content: 'https://bipbop.cl' },
       {
         property: 'og:image',
-        content: 'https://bipbop.cl/brand/generated/og.png',
+        content: 'https://bipbop.cl/brand/og.png',
       },
       { property: 'og:image:width', content: '1200' },
       { property: 'og:image:height', content: '630' },
       { property: 'og:image:type', content: 'image/png' },
       {
         property: 'og:image:alt',
-        content: 'BipBop Labs, estudio de software en Santiago, Chile',
+        content: 'Un pingüino programando frente a un notebook',
       },
       { property: 'og:locale', content: 'es_CL' },
       { property: 'og:locale:alternate', content: 'en_US' },
@@ -40,11 +40,11 @@ export const Route = createFileRoute('/')({
       { name: 'twitter:description', content: DESCRIPTION },
       {
         name: 'twitter:image',
-        content: 'https://bipbop.cl/brand/generated/og.png',
+        content: 'https://bipbop.cl/brand/og.png',
       },
       {
         name: 'twitter:image:alt',
-        content: 'BipBop Labs, estudio de software en Santiago, Chile',
+        content: 'Un pingüino programando frente a un notebook',
       },
     ],
     links: [

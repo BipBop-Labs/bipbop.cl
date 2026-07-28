@@ -13,6 +13,13 @@ import { inspectPdf, safeCvName } from './pdf'
 const DEDUPE_WINDOW_MS = 24 * 60 * 60 * 1000
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
 
+/**
+ * SUPPRESS_EMBEDS. Sin esto Discord arma una tarjeta de previsualización por
+ * cada enlace, y entre GitHub, LinkedIn, el proyecto, el panel y la grabación
+ * el canal queda inservible.
+ */
+const SIN_PREVISUALIZACIONES = 1 << 2
+
 /** Para armar los enlaces que van en el mensaje de Discord. */
 const SITE = process.env.SITE_URL || 'https://bipbop.cl'
 
@@ -281,7 +288,11 @@ async function deliver(app: Application, cv: Uint8Array): Promise<void> {
     const body = new FormData()
     body.append(
       'payload_json',
-      JSON.stringify({ content, allowed_mentions: { parse: [] } }),
+      JSON.stringify({
+        content,
+        allowed_mentions: { parse: [] },
+        flags: SIN_PREVISUALIZACIONES,
+      }),
     )
 
     // El CV va con el primero, para que quede junto a los datos.
