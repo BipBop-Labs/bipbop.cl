@@ -78,19 +78,18 @@ describe('comandos', () => {
 })
 
 describe('postulación', () => {
-  /** Recorre los nueve pasos y deja la sesión lista para enviar. */
+  /** Recorre los ocho pasos y deja la sesión lista para enviar. */
   async function fill(sessionId: string) {
     await runShell(sessionId, 'Ada Lovelace', IP)
     await runShell(sessionId, 'ada@example.com', IP)
     await runShell(sessionId, 'ada', IP)
     await runShell(sessionId, 'ada', IP)
-    await runShell(sessionId, 'ada.dev/engine', IP)
     runAttach(sessionId, {
       bytes: PDF,
       name: 'cv.pdf',
       type: 'application/pdf',
     })
-    await runShell(sessionId, 'Construí el motor.', IP)
+    await runShell(sessionId, 'https://ada.dev/engine construí el motor.', IP)
     await runShell(sessionId, 'Descarté los engranajes extra.', IP)
     return runShell(sessionId, 'Uso IA y verifico todo.', IP)
   }
@@ -153,6 +152,77 @@ describe('postulación', () => {
     // Sigue en el mismo paso hasta que el dato sea válido.
     const bueno = await runShell(sessionId, 'ada@example.com', IP)
     expect(text(bueno)).toContain('GitHub')
+  })
+
+  it('acepta el PDF aunque lo suelten antes de que le toque', async () => {
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP)
+
+    // Lo arrastran apenas empiezan, en el paso 1.
+    const temprano = runAttach(sessionId, {
+      bytes: PDF,
+      name: 'cv.pdf',
+      type: 'application/pdf',
+    })
+    expect(text(temprano)).toContain('adjuntado')
+    expect(temprano.mode).toBe('field') // sigue donde iba
+
+    await runShell(sessionId, 'Ada Lovelace', IP)
+    await runShell(sessionId, 'ada@example.com', IP)
+    await runShell(sessionId, 'ada', IP)
+
+    // Al llegar al paso del CV se lo salta: ya lo tenemos.
+    const siguiente = await runShell(sessionId, 'ada', IP)
+    expect(text(siguiente)).not.toContain('Tu CV en PDF')
+    expect(text(siguiente)).toContain('Algo que hayas construido')
+  })
+
+  it('saca el enlace del propio relato del proyecto', async () => {
+    const fetchMock = discordOk()
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP)
+    await fill(sessionId)
+
+    vi.setSystemTime(Date.now() + 5 * 60_000)
+    await runShell(sessionId, '', IP)
+
+    const payload = String(
+      (fetchMock.mock.calls[0][1]!.body as FormData).get('payload_json'),
+    )
+    expect(payload).toContain('https://ada.dev/engine')
+  })
+
+  it('exige el enlace dentro de la respuesta del proyecto', async () => {
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP)
+    await runShell(sessionId, 'Ada Lovelace', IP)
+    await runShell(sessionId, 'ada@example.com', IP)
+    await runShell(sessionId, 'ada', IP)
+    await runShell(sessionId, 'ada', IP)
+    runAttach(sessionId, { bytes: PDF, name: 'cv.pdf', type: 'application/pdf' })
+
+    const sinLink = await runShell(sessionId, 'Construí un motor, sin enlace.', IP)
+    expect(text(sinLink)).toContain('Falta el enlace')
+  })
+
+  it('avisa si la sesión se perdió, en vez de confundir', () => {
+    const reply = runAttach('sesion-que-no-existe', {
+      bytes: PDF,
+      name: 'cv.pdf',
+      type: 'application/pdf',
+    })
+    expect(text(reply)).toContain('sesión expiró')
+    expect(text(reply)).not.toContain('no toca adjuntar')
+  })
+
+  it('pide correr ./postular si adjuntan sin haber empezado', () => {
+    const { sessionId } = greet()
+    const reply = runAttach(sessionId, {
+      bytes: PDF,
+      name: 'cv.pdf',
+      type: 'application/pdf',
+    })
+    expect(text(reply)).toContain('./postular')
   })
 
   it('rechaza un PDF que no es PDF', () => {

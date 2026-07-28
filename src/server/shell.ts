@@ -83,10 +83,10 @@ function sweep() {
   }
 }
 
-function getSession(id?: string): Session {
+function getSession(id?: string): { session: Session; expired: boolean } {
   sweep()
   const existing = id ? sessions.get(id) : undefined
-  if (existing) return existing
+  if (existing) return { session: existing, expired: false }
 
   const session: Session = {
     id: randomUUID(),
@@ -99,7 +99,8 @@ function getSession(id?: string): Session {
     done: false,
   }
   sessions.set(session.id, session)
-  return session
+  // Si traía un id que ya no está, lo que había se perdió y hay que decirlo.
+  return { session, expired: Boolean(id) }
 }
 
 export function resetSessions() {
@@ -111,50 +112,41 @@ type Step = {
   /** Lo que se imprime antes de pedir el dato. */
   ask: Array<string>
   prompt: string
-  kind: 'line' | 'text' | 'file'
+  kind: 'line' | 'text' | 'file' | 'project'
   prefix?: string
 }
 
 const STEPS: Array<Step> = [
   {
     name: 'fullName',
-    ask: ['1/9  ¿Cómo te llamas?'],
+    ask: ['1/8  ¿Cómo te llamas?'],
     prompt: '>',
     kind: 'line',
   },
   {
     name: 'email',
-    ask: ['2/9  ¿A qué correo te escribimos?'],
+    ask: ['2/8  ¿A qué correo te escribimos?'],
     prompt: '>',
     kind: 'line',
   },
   {
     name: 'github',
-    ask: ['3/9  Tu GitHub. Solo el usuario.'],
+    ask: ['3/8  Tu GitHub. Solo el usuario.'],
     prompt: GITHUB_PREFIX,
     kind: 'line',
     prefix: GITHUB_PREFIX,
   },
   {
     name: 'linkedin',
-    ask: ['4/9  Tu LinkedIn. Solo el perfil.'],
+    ask: ['4/8  Tu LinkedIn. Solo el perfil.'],
     prompt: LINKEDIN_PREFIX,
     kind: 'line',
     prefix: LINKEDIN_PREFIX,
   },
   {
-    name: 'project',
-    ask: [
-      '5/9  Un enlace a algo que hayas construido.',
-      '     Proyecto, producto, repositorio o demo.',
-    ],
-    prompt: '>',
-    kind: 'line',
-  },
-  {
     name: 'cv',
     ask: [
-      '6/9  Tu CV en PDF, máximo 10 MB.',
+      '5/8  Tu CV en PDF, máximo 10 MB.',
       '     Presiona Enter para elegir el archivo.',
       '     Si estás en computador, también puedes arrastrarlo aquí.',
     ],
@@ -164,19 +156,19 @@ const STEPS: Array<Step> = [
   {
     name: 'answerProject',
     ask: [
-      '7/9  Lo que construiste',
+      '6/8  Algo que hayas construido',
       '',
-      '     Elige uno de los proyectos que compartiste. ¿Qué problema',
-      '     resolvía, qué hiciste tú personalmente, qué resultado tuvo y',
-      '     qué cambiaste después de verlo en uso?',
+      '     Pega el enlace (repositorio, demo o producto) y cuéntanos:',
+      '     ¿qué problema resolvía, qué hiciste tú personalmente, qué',
+      '     resultado tuvo y qué cambiaste después de verlo en uso?',
     ],
     prompt: '>',
-    kind: 'text',
+    kind: 'project',
   },
   {
     name: 'answerSimplicity',
     ask: [
-      '8/9  Ownership y simplificación',
+      '7/8  Ownership y simplificación',
       '',
       '     Cuéntanos sobre una ocasión reciente en que tuviste que hacerte',
       '     cargo de un problema importante pero poco definido. ¿Cómo',
@@ -189,7 +181,7 @@ const STEPS: Array<Step> = [
   {
     name: 'answerAi',
     ask: [
-      '9/9  Trabajo con IA',
+      '8/8  Trabajo con IA',
       '',
       '     Cuéntanos un caso concreto en el que incorporaste IA durante un',
       '     desarrollo. ¿En qué partes del proceso la usaste, qué decisiones',
@@ -219,6 +211,14 @@ function block(text: string): Array<Line> {
   return out(...text.split('\n'))
 }
 
+/** La sesión vivía en memoria del servidor y ya no está. */
+function expiredNotice(): Array<Line> {
+  return err(
+    'La sesión expiró y se perdió lo que llevabas.',
+    'Corre ./postular para empezar de nuevo.',
+  )
+}
+
 /** El estado en que queda la terminal después de procesar algo. */
 function state(session: Session, lines: Array<Line>): ShellReply {
   if (session.done) {
@@ -236,7 +236,10 @@ function state(session: Session, lines: Array<Line>): ShellReply {
     lines,
     prompt: step.prompt,
     mode: step.kind === 'file' ? 'attach' : 'field',
-    max: step.kind === 'text' ? MAX_ANSWER_LENGTH : undefined,
+    max:
+      step.kind === 'text' || step.kind === 'project'
+        ? MAX_ANSWER_LENGTH
+        : undefined,
   }
 }
 
@@ -358,6 +361,23 @@ function runCommand(session: Session, input: string): Array<Line> {
   }
 }
 
+/** Pasa al siguiente dato, saltando el CV si ya lo tenemos. */
+function advance(session: Session): Array<Line> {
+  session.step = (session.step as number) + 1
+  while (
+    session.step < STEPS.length &&
+    STEPS[session.step].kind === 'file' &&
+    session.cv
+  ) {
+    session.step += 1
+  }
+  return askCurrent(session)
+}
+
+/** El primer enlace que aparece en el texto. */
+const URL_IN_TEXT =
+  /(https?:\/\/\S+|(?:[\w-]+\.)+(?:com|cl|dev|io|app|net|org|ai|co|me|sh|xyz)(?:\/\S*)?)/i
+
 function applyInput(session: Session, input: string): Array<Line> {
   const step = STEPS[session.step as number]
 
@@ -373,36 +393,50 @@ function applyInput(session: Session, input: string): Array<Line> {
     return muted('Presiona Enter para elegir el PDF.')
   }
 
-  const value = step.kind === 'text' ? input : input.trim()
+  const value = step.kind === 'line' ? input.trim() : input
   const draft = { ...session.draft, [step.name]: value }
+
+  // La pregunta del proyecto trae el enlace adentro: lo sacamos de ahí.
+  if (step.kind === 'project') {
+    const found = value.match(URL_IN_TEXT)?.[0]
+    if (!found) {
+      return err('Falta el enlace al proyecto. Pégalo junto con tu respuesta.')
+    }
+    draft.project = found
+    const badLink = fieldError('project', draft)
+    if (badLink) return err(badLink)
+  }
+
   const problem = fieldError(step.name, draft)
   if (problem) return err(problem)
 
   session.draft = draft
-  session.step = (session.step as number) + 1
-  return askCurrent(session)
+  return advance(session)
 }
 
 function attachCv(
   session: Session,
   file: { bytes: Uint8Array; name: string; type: string },
 ): Array<Line> {
-  if (session.step === null || STEPS[session.step]?.kind !== 'file') {
-    return err('Ahora no toca adjuntar nada.')
+  if (session.step === null) {
+    return err('Todavía no estás postulando. Corre ./postular primero.')
   }
 
   const meta = { name: file.name, size: file.bytes.byteLength, type: file.type }
   const problem = validateCv(meta) ?? inspectPdf(file.bytes)
   if (problem) return err(problem)
 
+  const onCvStep = STEPS[session.step]?.kind === 'file'
   session.cv = { bytes: file.bytes, name: file.name }
-  session.step += 1
-  return [
-    ...out(
-      `adjuntado: ${file.name} (${Math.ceil(file.bytes.byteLength / 1024)} KB)`,
-    ),
-    ...askCurrent(session),
-  ]
+
+  const recibido = out(
+    `adjuntado: ${file.name} (${Math.ceil(file.bytes.byteLength / 1024)} KB)`,
+  )
+
+  // Si lo soltaron antes de que le tocara, lo guardamos y seguimos donde iban.
+  if (!onCvStep) return recibido
+
+  return [...recibido, ...advance(session)]
 }
 
 async function send(session: Session, ip: string): Promise<Array<Line>> {
@@ -424,9 +458,11 @@ async function send(session: Session, ip: string): Promise<Array<Line>> {
     return err('Ya recibimos una postulación con ese correo.')
   }
 
+  if (!session.cv) return err('Falta el CV. Adjunta el PDF antes de enviar.')
+
   session.sending = true
   try {
-    const record = await submitApplication(fields, session.cv!, {
+    const record = await submitApplication(fields, session.cv, {
       source: 'terminal',
       flag: session.flag,
     })
@@ -462,7 +498,7 @@ export async function runShell(
   input: string,
   ip: string,
 ): Promise<ShellReply> {
-  const session = getSession(sessionId)
+  const { session, expired } = getSession(sessionId)
 
   if (session.done) return state(session, [])
 
@@ -470,6 +506,8 @@ export async function runShell(
   const echo: Array<Line> = [
     { kind: 'in', text: input, prompt: state(session, []).prompt },
   ]
+
+  if (expired) return state(session, [...echo, ...expiredNotice()])
 
   // Todavía no empieza a postular: es un comando.
   if (session.step === null) {
@@ -516,7 +554,7 @@ export function completeInput(
   sessionId: string | undefined,
   input: string,
 ): ShellReply & { completion?: string } {
-  const session = getSession(sessionId)
+  const { session } = getSession(sessionId)
   const base = state(session, [])
 
   // Solo se completa en el shell, no mientras se responde.
@@ -555,13 +593,16 @@ export function runAttach(
   sessionId: string | undefined,
   file: { bytes: Uint8Array; name: string; type: string },
 ): ShellReply {
-  const session = getSession(sessionId)
+  const { session, expired } = getSession(sessionId)
+  if (expired) {
+    return state(session, expiredNotice())
+  }
   if (session.done) return state(session, [])
   return state(session, attachCv(session, file))
 }
 
 /** Primera carga de la página. */
 export function greet(sessionId?: string): ShellReply {
-  const session = getSession(sessionId)
+  const { session } = getSession(sessionId)
   return state(session, [])
 }

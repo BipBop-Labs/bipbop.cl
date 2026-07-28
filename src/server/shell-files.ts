@@ -148,16 +148,16 @@ Te vamos a pedir, en orden:
   1. nombre completo
   2. correo electrónico
   3. GitHub y LinkedIn (solo tu usuario)
-  4. un enlace a algo que hayas construido
-  5. tu CV en PDF, máximo 10 MB
+  4. tu CV en PDF, máximo 10 MB
 
 Y tres preguntas, de 1.200 caracteres cada una:
 
-  · lo que construiste
+  · algo que hayas construido, con el enlace
   · ownership y simplificación
   · trabajo con IA
 
-Se responde una cosa a la vez. Se sale con :q, como en vim.
+Se responde una cosa a la vez. Enter envía, Shift+Enter salta línea.
+Se sale con :q, como en vim.
 
   ./postular --flag <valor>   si encontraste una`
 

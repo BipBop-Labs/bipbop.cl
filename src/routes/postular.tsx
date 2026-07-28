@@ -88,7 +88,7 @@ function Postular() {
   const [dragging, setDragging] = useState(false)
 
   const session = useRef<string | undefined>(undefined)
-  const inputEl = useRef<HTMLInputElement>(null)
+  const inputEl = useRef<HTMLTextAreaElement>(null)
   const fileEl = useRef<HTMLInputElement>(null)
   const scroller = useRef<HTMLDivElement>(null)
 
@@ -124,6 +124,14 @@ function Postular() {
     body.append('greet', '1')
     void post(body)
   }, [post])
+
+  // El campo crece con lo que se escribe, sin pasarse de la mitad de la caja.
+  useEffect(() => {
+    const el = inputEl.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 220)}px`
+  }, [input])
 
   // La terminal siempre muestra lo último.
   useEffect(() => {
@@ -164,10 +172,17 @@ function Postular() {
     }
   }
 
-  function onKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== 'Tab') return
-    event.preventDefault()
-    if (!busy) void complete()
+  function onKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === 'Tab') {
+      event.preventDefault()
+      if (!busy) void complete()
+      return
+    }
+    // Enter envía; Shift+Enter salta de línea, para respuestas largas.
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      onSubmit(event)
+    }
   }
 
   function onSubmit(event: React.FormEvent) {
@@ -241,15 +256,16 @@ function Postular() {
         {mode === 'done' ? null : (
           <form
             onSubmit={onSubmit}
-            className="flex items-baseline gap-2 border-t border-line px-4 py-3"
+            className="flex items-start gap-2 border-t border-line px-4 py-3"
           >
-            <label className="shrink-0 text-success" htmlFor="cmd">
+            <label className="shrink-0 pt-px text-success" htmlFor="cmd">
               {reply?.prompt ?? '$'}
             </label>
-            <input
+            <textarea
               id="cmd"
               ref={inputEl}
               value={input}
+              rows={1}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
               disabled={busy}
@@ -257,13 +273,13 @@ function Postular() {
               autoComplete="off"
               autoCapitalize="off"
               autoCorrect="off"
-              spellCheck={mode === 'field'}
+              spellCheck={applying}
               aria-label={applying ? 'Respuesta' : 'Comando de la terminal'}
-              className="min-w-0 flex-1 border-0 bg-transparent text-ink caret-success outline-none disabled:opacity-50 max-[720px]:text-[16px]"
+              className="min-w-0 flex-1 resize-none overflow-hidden border-0 bg-transparent font-mono text-ink caret-success outline-none disabled:opacity-50 max-[720px]:text-[16px]"
             />
             {reply?.max ? (
               <span
-                className={`shrink-0 text-[0.75rem] tabular-nums ${over ? 'text-danger' : 'text-ink-3'}`}
+                className={`shrink-0 self-end text-[0.75rem] tabular-nums ${over ? 'text-danger' : 'text-ink-3'}`}
               >
                 {input.length}/{reply.max}
               </span>
