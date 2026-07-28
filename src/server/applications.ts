@@ -89,12 +89,8 @@ type DiscordAttachment = { id: string; url: string }
 async function deliverCv(
   bytes: Uint8Array,
   fields: ApplicationFields,
-  id: string,
   message: string,
 ): Promise<DiscordAttachment> {
-  const webhook = process.env.DISCORD_WEBHOOK_URL
-  if (!webhook) throw new DeliveryFailed('DISCORD_WEBHOOK_URL no está configurado')
-
   const dir = await mkdtemp(join(tmpdir(), 'bipbop-cv-'))
   try {
     const filename = safeCvName(fields.fullName)
@@ -102,9 +98,14 @@ async function deliverCv(
     await writeFile(path, bytes, { mode: 0o600 })
 
     // Se relee desde el disco: lo que revisamos es exactamente lo que se sube.
+    // Va antes que cualquier cosa de infraestructura: primero el archivo.
     const stored = new Uint8Array(await readFile(path))
     const problem = inspectPdf(stored)
     if (problem) throw new CvRejected(problem)
+
+    const webhook = process.env.DISCORD_WEBHOOK_URL
+    if (!webhook)
+      throw new DeliveryFailed('DISCORD_WEBHOOK_URL no está configurado')
 
     const body = new FormData()
     body.append(
@@ -177,7 +178,6 @@ export async function submitApplication(
   const attachment = await deliverCv(
     cv.bytes,
     fields,
-    id,
     discordMessage(fields, id),
   )
 

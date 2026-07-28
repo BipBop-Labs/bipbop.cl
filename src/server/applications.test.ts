@@ -7,9 +7,11 @@ import { EMPTY_FIELDS } from '#/lib/application'
 import { Route } from '#/routes/api.applications'
 import { resetRateLimit } from './applications'
 
-const POST = Route.options.server!.handlers!.POST as (ctx: {
-  request: Request
-}) => Promise<Response>
+const POST = (
+  Route.options.server!.handlers as unknown as {
+    POST: (ctx: { request: Request }) => Promise<Response>
+  }
+).POST
 
 /** PDF mínimo válido: cabecera + marcador de fin. */
 const PDF = new TextEncoder().encode('%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF\n')

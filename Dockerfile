@@ -22,7 +22,11 @@ RUN pnpm build
 FROM base AS runtime
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV DATA_DIR=/data
 COPY --from=build /app/.output ./.output
+# El volumen de postulaciones tiene que existir y pertenecer al usuario node.
+RUN mkdir -p /data && chown node:node /data
+VOLUME /data
 EXPOSE 3000
 USER node
 CMD ["node", ".output/server/index.mjs"]

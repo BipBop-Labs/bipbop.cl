@@ -10,11 +10,7 @@ import {
   normalizeFields,
   validate,
 } from '#/lib/application'
-import type {
-  ApplicationFields,
-  Errors,
-  FieldName,
-} from '#/lib/application'
+import type { ApplicationFields, Errors, FieldName } from '#/lib/application'
 
 export const Route = createFileRoute('/postular')({
   head: () => ({
@@ -34,12 +30,20 @@ export const Route = createFileRoute('/postular')({
   component: Postular,
 })
 
+/**
+ * Los campos son una línea, no una caja: el foco los enciende en moss y el
+ * error los pinta en clay. Mismo lenguaje de hairlines que el resto del sitio.
+ */
 const INPUT =
-  'w-full rounded-[2px] border border-line bg-surface px-3 py-[0.6rem] text-base text-ink outline-none transition-colors focus:border-success focus:ring-1 focus:ring-success aria-[invalid=true]:border-danger'
-const LABEL = 'block text-[0.9rem] font-medium text-ink'
-const HINT = 'mt-1 text-[0.8rem] text-ink-3'
-const ERROR = 'mt-1 text-[0.8rem] text-danger'
-const H2 = 'mt-12 mb-4 text-[1.35rem] font-semibold tracking-[-0.01em]'
+  'w-full border-0 border-b border-line bg-transparent px-0 py-2 text-[1.05rem] text-ink outline-none transition-colors placeholder:text-ink-3 focus:border-success aria-[invalid=true]:border-danger'
+const TEXTAREA =
+  'mt-4 w-full resize-y rounded-[2px] border border-line bg-surface px-4 py-3 text-base leading-[1.6] text-ink outline-none transition-colors focus:border-success aria-[invalid=true]:border-danger'
+const LABEL =
+  'block text-[0.62rem] tracking-[0.15em] text-ink-3 uppercase transition-colors'
+const HINT = 'mt-2 text-[0.8rem] text-ink-3'
+const ERROR = 'mt-2 text-[0.8rem] text-danger'
+const RULE =
+  'rule-after mt-16 mb-8 flex items-center gap-4 text-[0.85rem] font-medium text-ink-3'
 
 const QUESTIONS: Array<{ name: FieldName; title: string; label: string }> = [
   {
@@ -76,7 +80,10 @@ function Postular() {
 
   const dirty =
     status !== 'success' &&
-    (cv !== null || FIELD_ORDER.some((f) => f !== 'cv' && fields[f as keyof ApplicationFields]))
+    (cv !== null ||
+      FIELD_ORDER.some(
+        (f) => f !== 'cv' && fields[f as keyof ApplicationFields],
+      ))
 
   // Avisa antes de salir si hay algo escrito y todavía no se envía.
   useEffect(() => {
@@ -88,13 +95,16 @@ function Postular() {
 
   const set = (name: keyof ApplicationFields) => (value: string) => {
     setFields((prev) => ({ ...prev, [name]: value }))
+    clearError(name)
+  }
+
+  const clearError = (name: FieldName) =>
     setErrors((prev) => {
       if (!prev[name]) return prev
       const next = { ...prev }
       delete next[name]
       return next
     })
-  }
 
   const focusFirstInvalid = (found: Errors) => {
     const field = firstInvalidField(found)
@@ -125,7 +135,8 @@ function Postular() {
     setMessage('')
 
     const body = new FormData()
-    for (const [key, value] of Object.entries(normalized)) body.append(key, value)
+    for (const [key, value] of Object.entries(normalized))
+      body.append(key, value)
     body.append('cv', cv as File)
     body.append('startedAt', String(startedAt.current))
     body.append('website', '') // honeypot
@@ -164,34 +175,55 @@ function Postular() {
   const submitting = status === 'submitting'
 
   return (
-    <main className="mx-auto max-w-[760px] px-6 pt-16 pb-24 leading-[1.65]">
+    <main className="mx-auto max-w-[820px] px-6 pt-16 pb-24 leading-[1.65] max-[720px]:pt-10">
       <Crumb />
 
-      <h1 className="mb-5 font-display text-[clamp(2.2rem,5vw,3.4rem)] leading-[1.1] font-normal tracking-[-0.01em]">
-        Software Engineer <em className="text-success italic">en BipBop Labs</em>
-      </h1>
+      <header className="motion-safe-opacity animate-rise opacity-0">
+        <p className="mb-4 text-[0.62rem] tracking-[0.15em] text-success uppercase">
+          Estamos contratando · Santiago, Chile
+        </p>
+        <h1 className="max-w-[16ch] font-display text-[clamp(2.6rem,7vw,4.5rem)] leading-[0.98] font-normal tracking-[-0.02em]">
+          Software Engineer{' '}
+          <em className="text-success italic">en BipBop Labs</em>
+        </h1>
+      </header>
 
-      <p className="mb-4 max-w-[60ch] text-[1.2rem] leading-[1.55] font-normal text-ink-2">
-        Somos el equipo detrás de{' '}
-        <Link
-          className="border-b border-success text-success no-underline hover:opacity-70"
-          to="/revi"
-        >
-          Revi
-        </Link>
-        , la plataforma de asistentes con IA para tramitar permisos impulsada
-        por la Cámara Chilena de la Construcción.
-      </p>
-      <p className="mb-10 max-w-[62ch]">
-        Hoy somos tres personas. Buscamos a alguien con experiencia, con
-        ownership real de lo que construye, con capacidad de simplificar
-        problemas y que use herramientas de IA a diario en su trabajo.
-      </p>
+      <div className="mt-10 grid gap-x-12 gap-y-6 max-[720px]:grid-cols-1 min-[721px]:grid-cols-[1fr_auto]">
+        <div className="motion-safe-opacity animate-rise opacity-0 [animation-delay:0.12s]">
+          <p className="max-w-[58ch] text-[1.15rem] leading-[1.55] text-ink-2">
+            Somos el equipo detrás de{' '}
+            <Link
+              className="border-b border-success text-success no-underline transition-opacity hover:opacity-70"
+              to="/revi"
+            >
+              Revi
+            </Link>
+            , la plataforma de asistentes con IA para tramitar permisos
+            impulsada por la Cámara Chilena de la Construcción.
+          </p>
+          <p className="mt-4 max-w-[58ch]">
+            Hoy somos tres personas. Buscamos a alguien con experiencia, con
+            ownership real de lo que construye, con capacidad de simplificar
+            problemas y que use herramientas de IA a diario en su trabajo.
+          </p>
+        </div>
 
-      <form onSubmit={onSubmit} noValidate>
-        <h2 className={H2}>Tus datos</h2>
+        <span
+          aria-hidden="true"
+          className="motion-safe-opacity block h-28 w-28 animate-rise self-start bg-[url('/brand/generated/bipbop_logo.webp')] bg-contain bg-center bg-no-repeat opacity-0 [animation-delay:0.2s] max-[720px]:hidden"
+        />
+      </div>
 
-        <div className="grid gap-5">
+      <form
+        onSubmit={onSubmit}
+        noValidate
+        className="motion-safe-opacity animate-rise opacity-0 [animation-delay:0.28s]"
+      >
+        <div className={RULE}>
+          <span>Tus datos</span>
+        </div>
+
+        <div className="grid gap-x-12 gap-y-8 min-[721px]:grid-cols-2">
           <Field
             name="fullName"
             label="Nombre completo"
@@ -218,7 +250,7 @@ function Postular() {
             error={errors.github}
             onChange={set('github')}
             refs={refs}
-            hint="github.com/tu-usuario"
+            placeholder="github.com/tu-usuario"
             inputMode="url"
           />
           <Field
@@ -228,63 +260,44 @@ function Postular() {
             error={errors.linkedin}
             onChange={set('linkedin')}
             refs={refs}
-            hint="linkedin.com/in/tu-perfil"
+            placeholder="linkedin.com/in/tu-perfil"
             inputMode="url"
           />
-          <Field
-            name="project"
-            label="Enlace a un proyecto, producto, repositorio o demo"
-            value={fields.project}
-            error={errors.project}
-            onChange={set('project')}
-            refs={refs}
-            hint="Algo que hayas construido y puedas mostrarnos."
-            inputMode="url"
-          />
-
-          <div>
-            <label className={LABEL} htmlFor="cv">
-              CV en PDF
-            </label>
-            <input
-              id="cv"
-              name="cv"
-              type="file"
-              accept="application/pdf,.pdf"
-              ref={(el) => {
-                refs.current.cv = el
-              }}
-              onChange={(e) => {
-                setCv(e.target.files?.[0] ?? null)
-                setErrors((prev) => {
-                  if (!prev.cv) return prev
-                  const next = { ...prev }
-                  delete next.cv
-                  return next
-                })
-              }}
-              aria-invalid={Boolean(errors.cv)}
-              aria-describedby={errors.cv ? 'cv-error' : 'cv-hint'}
-              className="mt-1 w-full cursor-pointer rounded-[2px] border border-line bg-surface px-3 py-[0.6rem] text-[0.9rem] text-ink-2 file:mr-3 file:cursor-pointer file:rounded-[2px] file:border file:border-line file:bg-page file:px-3 file:py-1 file:text-[0.85rem] file:text-ink aria-[invalid=true]:border-danger"
+          <div className="min-[721px]:col-span-2">
+            <Field
+              name="project"
+              label="Proyecto, producto, repositorio o demo"
+              value={fields.project}
+              error={errors.project}
+              onChange={set('project')}
+              refs={refs}
+              placeholder="Algo que hayas construido y puedas mostrarnos"
+              hint="Sobre esto te preguntamos más abajo."
+              inputMode="url"
             />
-            {errors.cv ? (
-              <p className={ERROR} id="cv-error">
-                {errors.cv}
-              </p>
-            ) : (
-              <p className={HINT} id="cv-hint">
-                Máximo 10 MB.
-              </p>
-            )}
+          </div>
+          <div className="min-[721px]:col-span-2">
+            <CvField
+              file={cv}
+              error={errors.cv}
+              refs={refs}
+              onChange={(file) => {
+                setCv(file)
+                clearError('cv')
+              }}
+            />
           </div>
         </div>
 
-        <h2 className={H2}>Tres preguntas</h2>
+        <div className={RULE}>
+          <span>Tres preguntas</span>
+        </div>
 
-        <div className="grid gap-8">
-          {QUESTIONS.map((q) => (
+        <ol className="grid gap-14">
+          {QUESTIONS.map((q, index) => (
             <Answer
               key={q.name}
+              index={index + 1}
               name={q.name}
               title={q.title}
               label={q.label}
@@ -294,27 +307,54 @@ function Postular() {
               refs={refs}
             />
           ))}
-        </div>
+        </ol>
 
         {/* Honeypot: oculto para personas, visible para bots. */}
-        <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="absolute -left-[9999px] h-px w-px overflow-hidden"
+        >
           <label htmlFor="website">No llenar</label>
-          <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+          <input
+            id="website"
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+          />
         </div>
 
-        <div className="mt-10 flex flex-wrap items-center gap-4" aria-live="polite">
+        <div
+          className="mt-16 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-line pt-8"
+          aria-live="polite"
+        >
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex cursor-pointer items-center gap-[0.55rem] rounded-[2px] border border-success bg-[color-mix(in_srgb,var(--color-success)_12%,transparent)] px-[1.05rem] py-[0.7rem] text-[0.95rem] font-bold text-success transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
+            className="group inline-flex cursor-pointer items-center gap-3 rounded-[2px] border border-success bg-[color-mix(in_srgb,var(--color-success)_12%,transparent)] px-6 py-[0.85rem] text-[0.95rem] font-bold text-success transition-all duration-200 hover:bg-[color-mix(in_srgb,var(--color-success)_20%,transparent)] disabled:cursor-not-allowed disabled:opacity-55"
           >
             {submitting ? 'Enviando…' : 'Enviar postulación'}
+            <span
+              aria-hidden="true"
+              className={
+                submitting
+                  ? 'h-[1em] w-[1em] rounded-full border border-success border-t-transparent motion-safe:animate-spin'
+                  : 'transition-transform duration-200 group-hover:translate-x-1'
+              }
+            >
+              {submitting ? '' : '→'}
+            </span>
           </button>
+
           {status === 'error' && message ? (
             <p className="text-[0.9rem] text-danger" role="alert">
               {message}
             </p>
-          ) : null}
+          ) : (
+            <p className="text-[0.85rem] text-ink-3">
+              Te responderemos por correo, escriba lo que escriba el resultado.
+            </p>
+          )}
         </div>
       </form>
 
@@ -331,6 +371,7 @@ function Field({
   onChange,
   refs,
   hint,
+  placeholder,
   type = 'text',
   autoComplete,
   inputMode,
@@ -342,6 +383,7 @@ function Field({
   onChange: (value: string) => void
   refs: React.RefObject<Partial<Record<FieldName, HTMLElement | null>>>
   hint?: string
+  placeholder?: string
   type?: string
   autoComplete?: string
   inputMode?: 'url' | 'text' | 'email'
@@ -350,8 +392,11 @@ function Field({
   const hintId = `${name}-hint`
 
   return (
-    <div>
-      <label className={LABEL} htmlFor={name}>
+    <div className="group">
+      <label
+        className={`${LABEL} ${error ? 'text-danger' : 'group-focus-within:text-success'}`}
+        htmlFor={name}
+      >
         {label}
       </label>
       <input
@@ -359,6 +404,7 @@ function Field({
         name={name}
         type={type}
         value={value}
+        placeholder={placeholder}
         autoComplete={autoComplete}
         inputMode={inputMode}
         onChange={(e) => onChange(e.target.value)}
@@ -367,7 +413,7 @@ function Field({
         }}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? errorId : hint ? hintId : undefined}
-        className={`${INPUT} mt-1`}
+        className={INPUT}
       />
       {error ? (
         <p className={ERROR} id={errorId}>
@@ -382,7 +428,65 @@ function Field({
   )
 }
 
+function formatSize(bytes: number): string {
+  const mb = bytes / (1024 * 1024)
+  return mb >= 0.1 ? `${mb.toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`
+}
+
+/** El input nativo va oculto; la etiqueta es la superficie visible. */
+function CvField({
+  file,
+  error,
+  onChange,
+  refs,
+}: {
+  file: File | null
+  error?: string
+  onChange: (file: File | null) => void
+  refs: React.RefObject<Partial<Record<FieldName, HTMLElement | null>>>
+}) {
+  return (
+    <div className="group">
+      <span className={`${LABEL} ${error ? 'text-danger' : ''}`}>
+        CV en PDF
+      </span>
+      <label
+        htmlFor="cv"
+        className={`mt-2 flex cursor-pointer flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-dashed py-3 transition-colors group-focus-within:border-success hover:border-ink-3 ${
+          error ? 'border-danger' : file ? 'border-success' : 'border-line'
+        }`}
+      >
+        <span className={file ? 'text-[1.05rem] text-ink' : 'text-[1.05rem] text-ink-3'}>
+          {file ? file.name : 'Adjuntar archivo…'}
+        </span>
+        <span className="text-[0.8rem] text-ink-3">
+          {file ? `${formatSize(file.size)} · cambiar` : 'PDF · máximo 10 MB'}
+        </span>
+      </label>
+      <input
+        id="cv"
+        name="cv"
+        type="file"
+        accept="application/pdf,.pdf"
+        ref={(el) => {
+          refs.current.cv = el
+        }}
+        onChange={(e) => onChange(e.target.files?.[0] ?? null)}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? 'cv-error' : undefined}
+        className="sr-only"
+      />
+      {error ? (
+        <p className={ERROR} id="cv-error">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
 function Answer({
+  index,
   name,
   title,
   label,
@@ -391,6 +495,7 @@ function Answer({
   onChange,
   refs,
 }: {
+  index: number
   name: FieldName
   title: string
   label: string
@@ -402,68 +507,96 @@ function Answer({
   const errorId = `${name}-error`
   const countId = `${name}-count`
   const over = value.length > MAX_ANSWER_LENGTH
+  const filled = Math.min(value.length / MAX_ANSWER_LENGTH, 1)
 
   return (
-    <div>
-      <p className="mb-1 text-[0.62rem] tracking-[0.15em] text-ink-3 uppercase">
-        {title}
-      </p>
-      <label className={`${LABEL} max-w-[62ch] leading-[1.5]`} htmlFor={name}>
-        {label}
-      </label>
-      <textarea
-        id={name}
-        name={name}
-        rows={6}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        ref={(el) => {
-          refs.current[name] = el
-        }}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? `${errorId} ${countId}` : countId}
-        className={`${INPUT} mt-2 resize-y`}
-      />
-      <div className="mt-1 flex justify-between gap-4">
-        {error ? (
-          <p className={ERROR} id={errorId}>
-            {error}
-          </p>
-        ) : (
-          <span />
-        )}
+    <li className="group grid gap-x-6 gap-y-3 min-[721px]:grid-cols-[3.5rem_1fr]">
+      <span
+        aria-hidden="true"
+        className="font-display text-[2.5rem] leading-none text-line transition-colors group-focus-within:text-success max-[720px]:text-[1.75rem]"
+      >
+        {String(index).padStart(2, '0')}
+      </span>
+
+      <div>
         <p
-          className={`text-[0.8rem] ${over ? 'text-danger' : 'text-ink-3'}`}
-          id={countId}
+          className={`${LABEL} mb-2 ${error ? 'text-danger' : 'group-focus-within:text-success'}`}
         >
-          {value.length} / {MAX_ANSWER_LENGTH}
+          {title}
         </p>
+        <label
+          className="block max-w-[58ch] text-[1.05rem] leading-[1.5] text-ink"
+          htmlFor={name}
+        >
+          {label}
+        </label>
+        <textarea
+          id={name}
+          name={name}
+          rows={6}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          ref={(el) => {
+            refs.current[name] = el
+          }}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${errorId} ${countId}` : countId}
+          className={TEXTAREA}
+        />
+
+        {/* El avance del contador, como hairline: se lee de reojo. */}
+        <div className="mt-2 h-px w-full bg-line" aria-hidden="true">
+          <div
+            className={`h-px origin-left transition-transform duration-300 ${over ? 'bg-danger' : 'bg-success'}`}
+            style={{ transform: `scaleX(${filled})` }}
+          />
+        </div>
+
+        <div className="mt-2 flex justify-between gap-4">
+          {error ? (
+            <p className={`${ERROR} mt-0`} id={errorId}>
+              {error}
+            </p>
+          ) : (
+            <span />
+          )}
+          <p
+            className={`text-[0.8rem] tabular-nums ${over ? 'text-danger' : 'text-ink-3'}`}
+            id={countId}
+          >
+            {value.length} / {MAX_ANSWER_LENGTH}
+          </p>
+        </div>
       </div>
-    </div>
+    </li>
   )
 }
 
 function Success() {
   return (
-    <main className="mx-auto max-w-[760px] px-6 pt-16 pb-24 leading-[1.65]">
-      <Crumb />
+    <main className="mx-auto flex min-h-[70vh] max-w-[820px] flex-col justify-center px-6 py-24 leading-[1.65]">
       <span
         aria-hidden="true"
-        className="mb-6 block h-20 w-20 bg-[url('/brand/generated/bipbop_logo.webp')] bg-contain bg-center bg-no-repeat"
+        className="motion-safe-opacity mb-8 block h-24 w-24 animate-rise bg-[url('/brand/generated/bipbop_logo.webp')] bg-contain bg-center bg-no-repeat opacity-0"
       />
       <h1
-        className="mb-5 font-display text-[clamp(2.2rem,5vw,3.4rem)] leading-[1.1] font-normal tracking-[-0.01em]"
+        className="motion-safe-opacity mb-6 max-w-[14ch] animate-rise font-display text-[clamp(2.6rem,7vw,4.5rem)] leading-[0.98] font-normal tracking-[-0.02em] opacity-0 [animation-delay:0.1s] focus:outline-none"
         tabIndex={-1}
         ref={(el) => el?.focus()}
       >
         Postulación <em className="text-success italic">recibida</em>
       </h1>
-      <p className="max-w-[60ch] text-[1.2rem] leading-[1.55] text-ink-2">
+      <p className="motion-safe-opacity max-w-[58ch] animate-rise text-[1.15rem] leading-[1.55] text-ink-2 opacity-0 [animation-delay:0.18s]">
         Gracias por postular a BipBop Labs. Revisaremos tu experiencia y los
         proyectos que compartiste. Si tu perfil calza con lo que estamos
         buscando, nos pondremos en contacto contigo.
       </p>
-      <SiteFooter />
+      <Link
+        className="motion-safe-opacity mt-10 inline-flex w-fit animate-rise items-center gap-2 border-b border-line text-[0.9rem] text-ink-2 no-underline opacity-0 transition-colors [animation-delay:0.26s] hover:border-success hover:text-success"
+        to="/"
+      >
+        Volver a bipbop.cl
+      </Link>
     </main>
   )
 }
@@ -471,7 +604,7 @@ function Success() {
 function Crumb() {
   return (
     <nav
-      className="mb-8 text-[0.78rem] tracking-[0.08em] text-ink-3 uppercase"
+      className="mb-10 text-[0.78rem] tracking-[0.08em] text-ink-3 uppercase"
       aria-label="Breadcrumb"
     >
       <Link
@@ -487,7 +620,7 @@ function Crumb() {
 
 function SiteFooter() {
   return (
-    <footer className="mt-16 border-t border-line pt-8 text-[0.78rem] tracking-[0.06em] text-ink-3">
+    <footer className="mt-20 border-t border-line pt-8 text-[0.78rem] tracking-[0.06em] text-ink-3">
       <p>
         © {new Date().getFullYear()} BipBop Labs · Santiago, CL ·{' '}
         <Link className="border-0 text-ink-2 no-underline" to="/">
