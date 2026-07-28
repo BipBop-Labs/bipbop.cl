@@ -7,6 +7,7 @@ services:
       - PORT=3000
       - DATA_DIR=/data
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+      - ADMIN_KEY=${ADMIN_KEY}
     volumes:
       - data:/data
     healthcheck:

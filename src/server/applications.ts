@@ -1,20 +1,20 @@
-import { createHash, randomUUID } from 'node:crypto'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { randomUUID } from 'node:crypto'
 
 import type { ApplicationFields } from '#/lib/application'
 import { getDb } from './db'
 import { inspectPdf, safeCvName } from './pdf'
 
 /**
- * Discord es la fuente de verdad: la postulación completa, con el CV adjunto,
- * vive en el canal del equipo. El servidor no guarda nada: el PDF pasa por una
- * carpeta temporal que se borra apenas se sube.
+ * La postulación se guarda primero en nuestra base y recién después se manda a
+ * Discord. Si el webhook falla, la postulación ya está a salvo y se puede
+ * reenviar desde /admin: nadie pierde lo que escribió.
  */
 
 const DEDUPE_WINDOW_MS = 24 * 60 * 60 * 1000
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
+
+/** Discord corta el mensaje en 2.000 caracteres, así que va paginado. */
+const DISCORD_LIMIT = 1900
 
 /**
  * Detrás de una IP residencial o de un CGNAT puede haber un barrio entero, así
@@ -40,20 +40,15 @@ export type Application = ApplicationFields &
     id: string
     createdAt: string
     status: 'new'
-    cv: { url: string; messageId: string; originalName: string; size: number }
+    cvName: string
+    cvSize: number
+    /** null mientras no haya llegado a Discord. */
+    deliveredAt: string | null
+    deliveryError: string | null
   }
 
-/**
- * El rate limit vive en memoria y se pierde al reiniciar: es un freno para
- * bots, no un registro. La deduplicación sí persiste, para que un redespliegue
- * no habilite postular dos veces.
- */
+/** El rate limit vive en memoria: es un freno para bots, no un registro. */
 const hits = new Map<string, Array<number>>()
-
-/** Guardamos el hash, no el correo. */
-function emailHash(email: string): string {
-  return createHash('sha256').update(email.trim().toLowerCase()).digest('hex')
-}
 
 function recent(key: string, bucket: Bucket, now: number): Array<number> {
   const fresh = (hits.get(`${bucket}:${key}`) ?? []).filter(
@@ -72,163 +67,260 @@ export function isRateLimited(
   return recent(key, bucket, now).length >= RATE_LIMIT_MAX[bucket]
 }
 
-/** Cobra una. En "apply" se llama recién cuando la postulación salió. */
+/** Cobra una. En "apply" se llama recién cuando la postulación se guardó. */
 export function recordHit(key: string, bucket: Bucket, now = Date.now()) {
   recent(key, bucket, now).push(now)
 }
 
 export function isDuplicate(email: string, now = Date.now()): boolean {
   const row = getDb()
-    .prepare('SELECT created_at FROM applied WHERE email_hash = ?')
-    .get(emailHash(email)) as { created_at: number } | undefined
+    .prepare('SELECT created_at FROM applications WHERE email = ?')
+    .get(email.trim().toLowerCase()) as { created_at: number } | undefined
   return row !== undefined && now - row.created_at < DEDUPE_WINDOW_MS
-}
-
-function markApplied(email: string) {
-  getDb()
-    .prepare(
-      `INSERT INTO applied (email_hash, created_at) VALUES (?, ?)
-       ON CONFLICT(email_hash) DO UPDATE SET created_at = excluded.created_at`,
-    )
-    .run(emailHash(email), Date.now())
 }
 
 export function resetState() {
   hits.clear()
-  getDb().exec('DELETE FROM applied')
+  getDb().exec('DELETE FROM applications')
 }
 
 export class CvRejected extends Error {}
-export class DeliveryFailed extends Error {}
 
-type DiscordAttachment = { id: string; url: string }
+type Row = {
+  id: string
+  created_at: number
+  status: string
+  source: Source
+  flag: number
+  full_name: string
+  email: string
+  github: string
+  linkedin: string
+  project: string
+  answer_project: string
+  answer_simplicity: string
+  answer_ai: string
+  cv_name: string
+  cv_size: number
+  delivered_at: number | null
+  delivery_error: string | null
+}
 
-/**
- * Escribe el PDF en una carpeta temporal, lo revisa y lo sube al webhook.
- * La carpeta se borra siempre, salga bien o mal.
- */
-async function deliverCv(
-  bytes: Uint8Array,
-  fields: ApplicationFields,
-  message: string,
-): Promise<DiscordAttachment> {
-  const dir = await mkdtemp(join(tmpdir(), 'bipbop-cv-'))
-  try {
-    const filename = safeCvName(fields.fullName)
-    const path = join(dir, filename)
-    await writeFile(path, bytes, { mode: 0o600 })
-
-    // Se relee desde el disco: lo que revisamos es exactamente lo que se sube.
-    // Va antes que cualquier cosa de infraestructura: primero el archivo.
-    const stored = new Uint8Array(await readFile(path))
-    const problem = inspectPdf(stored)
-    if (problem) throw new CvRejected(problem)
-
-    const webhook = process.env.DISCORD_WEBHOOK_URL
-    if (!webhook)
-      throw new DeliveryFailed('DISCORD_WEBHOOK_URL no está configurado')
-
-    const body = new FormData()
-    body.append(
-      'payload_json',
-      JSON.stringify({ content: message, allowed_mentions: { parse: [] } }),
-    )
-    body.append(
-      'files[0]',
-      new Blob([stored as BufferSource], { type: 'application/pdf' }),
-      filename,
-    )
-
-    const url = new URL(webhook)
-    url.searchParams.set('wait', 'true') // necesitamos el enlace del adjunto
-
-    const res = await fetch(url, { method: 'POST', body })
-    if (res.status === 413) {
-      throw new CvRejected(
-        'El PDF es demasiado pesado para enviarlo. Intenta con uno más liviano.',
-      )
-    }
-    if (!res.ok) {
-      throw new DeliveryFailed(`webhook respondió ${res.status}`)
-    }
-
-    const payload = (await res.json()) as {
-      id: string
-      attachments?: Array<{ url: string }>
-    }
-    return { id: payload.id, url: payload.attachments?.[0]?.url ?? '' }
-  } finally {
-    await rm(dir, { recursive: true, force: true })
+function toApplication(row: Row): Application {
+  return {
+    id: row.id,
+    createdAt: new Date(row.created_at).toISOString(),
+    status: 'new',
+    source: row.source,
+    flag: Boolean(row.flag),
+    fullName: row.full_name,
+    email: row.email,
+    github: row.github,
+    linkedin: row.linkedin,
+    project: row.project,
+    answerProject: row.answer_project,
+    answerSimplicity: row.answer_simplicity,
+    answerAi: row.answer_ai,
+    cvName: row.cv_name,
+    cvSize: row.cv_size,
+    deliveredAt: row.delivered_at
+      ? new Date(row.delivered_at).toISOString()
+      : null,
+    deliveryError: row.delivery_error,
   }
 }
 
-/** El mensaje ES el registro: lleva todo, incluidos id, fecha y estado. */
-function discordMessage(
-  fields: ApplicationFields,
-  meta: Meta,
-  id: string,
-  createdAt: string,
-): string {
-  const trim = (text: string) =>
-    text.length > 900 ? `${text.slice(0, 900)}…` : text
+const COLUMNS = `id, created_at, status, source, flag, full_name, email, github,
+  linkedin, project, answer_project, answer_simplicity, answer_ai, cv_name,
+  cv_size, delivered_at, delivery_error`
 
+export function listApplications(): Array<Application> {
+  return (
+    getDb()
+      .prepare(`SELECT ${COLUMNS} FROM applications ORDER BY created_at DESC`)
+      .all() as Array<Row>
+  ).map(toApplication)
+}
+
+export function getCv(
+  id: string,
+): { bytes: Uint8Array; name: string } | undefined {
+  const row = getDb()
+    .prepare('SELECT cv, cv_name FROM applications WHERE id = ?')
+    .get(id) as { cv: Uint8Array; cv_name: string } | undefined
+  return row ? { bytes: row.cv, name: row.cv_name } : undefined
+}
+
+/** El mensaje ES el registro: lleva todo, sin recortar las respuestas. */
+function discordMessage(app: Application): string {
   const badges = [
-    meta.source === 'api' ? '🤖 vía API (agente)' : '⌨️ vía terminal',
-    ...(meta.flag ? ['🔑 encontró la flag'] : []),
+    app.source === 'api' ? '🤖 vía API (agente)' : '⌨️ vía terminal',
+    ...(app.flag ? ['🔑 encontró la flag'] : []),
   ]
 
   return [
     '**Nueva postulación · Software Engineer**',
     badges.join(' · '),
-    `**${fields.fullName}** · ${fields.email}`,
-    `GitHub: ${fields.github}`,
-    `LinkedIn: ${fields.linkedin}`,
-    `Proyecto: ${fields.project}`,
+    `**${app.fullName}** · ${app.email}`,
+    `GitHub: ${app.github}`,
+    `LinkedIn: ${app.linkedin}`,
+    `Proyecto: ${app.project}`,
     '',
     '**Lo que construiste**',
-    trim(fields.answerProject),
+    app.answerProject,
     '',
     '**Ownership y simplificación**',
-    trim(fields.answerSimplicity),
+    app.answerSimplicity,
     '',
     '**Trabajo con IA**',
-    trim(fields.answerAi),
+    app.answerAi,
     '',
-    `\`new\` · \`${id}\` · ${createdAt}`,
+    `\`new\` · \`${app.id}\``,
   ].join('\n')
 }
 
 /**
- * Entrega la postulación a Discord. Si falla no se marca nada, así la persona
- * puede reintentar sin chocar con la deduplicación.
+ * Corta el mensaje en pedazos que Discord acepte, respetando los saltos de
+ * línea. Una línea más larga que el tope se parte a la fuerza.
+ */
+export function paginate(text: string, limit = DISCORD_LIMIT): Array<string> {
+  const chunks: Array<string> = []
+  let current = ''
+
+  for (const line of text.split('\n')) {
+    for (const piece of line.length > limit ? hardSplit(line, limit) : [line]) {
+      if (current && current.length + 1 + piece.length > limit) {
+        chunks.push(current)
+        current = piece
+      } else {
+        current = current ? `${current}\n${piece}` : piece
+      }
+    }
+  }
+  if (current) chunks.push(current)
+  return chunks
+}
+
+function hardSplit(line: string, limit: number): Array<string> {
+  const out: Array<string> = []
+  for (let i = 0; i < line.length; i += limit) out.push(line.slice(i, i + limit))
+  return out
+}
+
+/** Manda la postulación al webhook, paginada, con el CV en el primer mensaje. */
+async function deliver(app: Application, cv: Uint8Array): Promise<void> {
+  const webhook = process.env.DISCORD_WEBHOOK_URL
+  if (!webhook) throw new Error('DISCORD_WEBHOOK_URL no está configurado')
+
+  const chunks = paginate(discordMessage(app))
+  const url = new URL(webhook)
+
+  for (const [index, chunk] of chunks.entries()) {
+    const content =
+      chunks.length > 1
+        ? `${chunk}\n-# ${index + 1}/${chunks.length} · ${app.id}`
+        : chunk
+
+    const body = new FormData()
+    body.append(
+      'payload_json',
+      JSON.stringify({ content, allowed_mentions: { parse: [] } }),
+    )
+
+    // El CV va con el primero, para que quede junto a los datos.
+    if (index === 0) {
+      body.append(
+        'files[0]',
+        new Blob([cv as BufferSource], { type: 'application/pdf' }),
+        safeCvName(app.fullName),
+      )
+    }
+
+    const res = await fetch(url, { method: 'POST', body })
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '')
+      throw new Error(`webhook respondió ${res.status}: ${detail.slice(0, 300)}`)
+    }
+  }
+}
+
+/** Intenta entregar y deja anotado cómo le fue. */
+async function tryDeliver(app: Application, cv: Uint8Array): Promise<boolean> {
+  try {
+    await deliver(app, cv)
+    getDb()
+      .prepare(
+        'UPDATE applications SET delivered_at = ?, delivery_error = NULL WHERE id = ?',
+      )
+      .run(Date.now(), app.id)
+    return true
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`[applications] no se pudo entregar ${app.id}: ${message}`)
+    getDb()
+      .prepare('UPDATE applications SET delivery_error = ? WHERE id = ?')
+      .run(message, app.id)
+    return false
+  }
+}
+
+/**
+ * Guarda la postulación y después la manda a Discord. Solo falla si el PDF no
+ * sirve: una vez guardada, la persona ya cumplió su parte.
  */
 export async function submitApplication(
   fields: ApplicationFields,
   cv: { bytes: Uint8Array; name: string },
   meta: Meta,
 ): Promise<Application> {
-  const id = randomUUID()
-  const createdAt = new Date().toISOString()
+  const problem = inspectPdf(cv.bytes)
+  if (problem) throw new CvRejected(problem)
 
-  const attachment = await deliverCv(
-    cv.bytes,
-    fields,
-    discordMessage(fields, meta, id, createdAt),
+  const id = randomUUID()
+  const createdAt = Date.now()
+
+  getDb()
+    .prepare(
+      `INSERT INTO applications (
+         id, created_at, status, source, flag, full_name, email, github,
+         linkedin, project, answer_project, answer_simplicity, answer_ai,
+         cv, cv_name, cv_size
+       ) VALUES (?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(
+      id,
+      createdAt,
+      meta.source,
+      meta.flag ? 1 : 0,
+      fields.fullName,
+      fields.email,
+      fields.github,
+      fields.linkedin,
+      fields.project,
+      fields.answerProject,
+      fields.answerSimplicity,
+      fields.answerAi,
+      cv.bytes,
+      cv.name,
+      cv.bytes.byteLength,
+    )
+
+  const app = toApplication(
+    getDb()
+      .prepare(`SELECT ${COLUMNS} FROM applications WHERE id = ?`)
+      .get(id) as Row,
   )
 
-  markApplied(fields.email)
+  await tryDeliver(app, cv.bytes)
+  return app
+}
 
-  return {
-    ...fields,
-    ...meta,
-    id,
-    createdAt,
-    status: 'new',
-    cv: {
-      url: attachment.url,
-      messageId: attachment.id,
-      originalName: cv.name,
-      size: cv.bytes.byteLength,
-    },
-  }
+/** Reintento manual desde /admin, para lo que se quedó sin entregar. */
+export async function redeliver(id: string): Promise<boolean> {
+  const row = getDb()
+    .prepare(`SELECT ${COLUMNS} FROM applications WHERE id = ?`)
+    .get(id) as Row | undefined
+  const cv = getCv(id)
+  if (!row || !cv) return false
+  return tryDeliver(toApplication(row), cv.bytes)
 }

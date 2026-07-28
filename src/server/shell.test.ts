@@ -212,6 +212,18 @@ describe('postulación', () => {
     expect(text(sinLink)).toContain('Falta el enlace')
   })
 
+  it('retoma la postulación al recargar la página', async () => {
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP)
+    await runShell(sessionId, 'Ada Lovelace', IP)
+
+    // El navegador se recarga y saluda con la misma sesión guardada.
+    const devuelta = greet(sessionId)
+    expect(text(devuelta)).toContain('Retomando')
+    expect(text(devuelta)).toContain('correo')
+    expect(devuelta.mode).toBe('field')
+  })
+
   it('sobrevive a un reinicio del servidor', async () => {
     const { sessionId } = greet()
     await runShell(sessionId, './postular', IP)

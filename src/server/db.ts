@@ -4,8 +4,8 @@ import { DatabaseSync } from 'node:sqlite'
 
 /**
  * SQLite, con el módulo que ya trae Node: sin dependencias ni un contenedor
- * aparte. Guarda solo dos cosas, las que duelen si se pierden al redesplegar:
- * las sesiones de la terminal a medio llenar, y qué correos ya postularon.
+ * aparte. Guarda las sesiones de la terminal a medio llenar y las
+ * postulaciones completas, con el CV adentro.
  */
 
 let db: DatabaseSync | null = null
@@ -34,11 +34,30 @@ export function getDb(): DatabaseSync {
       cv_name     TEXT
     );
 
-    -- Solo el hash del correo: alcanza para deduplicar y no guarda a nadie.
-    CREATE TABLE IF NOT EXISTS applied (
-      email_hash  TEXT PRIMARY KEY,
-      created_at  INTEGER NOT NULL
+    -- Las postulaciones son nuestras: se guardan acá y de acá salen a
+    -- Discord. Si el webhook falla, no se pierde nada y se puede reenviar.
+    CREATE TABLE IF NOT EXISTS applications (
+      id                TEXT PRIMARY KEY,
+      created_at        INTEGER NOT NULL,
+      status            TEXT NOT NULL,
+      source            TEXT NOT NULL,
+      flag              INTEGER NOT NULL DEFAULT 0,
+      full_name         TEXT NOT NULL,
+      email             TEXT NOT NULL,
+      github            TEXT NOT NULL,
+      linkedin          TEXT NOT NULL,
+      project           TEXT NOT NULL,
+      answer_project    TEXT NOT NULL,
+      answer_simplicity TEXT NOT NULL,
+      answer_ai         TEXT NOT NULL,
+      cv                BLOB NOT NULL,
+      cv_name           TEXT NOT NULL,
+      cv_size           INTEGER NOT NULL,
+      delivered_at      INTEGER,
+      delivery_error    TEXT
     );
+
+    CREATE INDEX IF NOT EXISTS applications_email ON applications (email);
   `)
 
   return db

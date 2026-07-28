@@ -41,8 +41,13 @@ export type Line = {
   prompt?: string
 }
 
+/** Cambia en cada arranque del servidor, o sea en cada despliegue. */
+const VERSION = randomUUID().slice(0, 8)
+
 export type ShellReply = {
   sessionId: string
+  /** Para que el cliente note un despliegue en medio. */
+  version: string
   lines: Array<Line>
   /** Lo que se muestra pegado al cursor, por ejemplo "$" o "github.com/". */
   prompt: string
@@ -69,6 +74,9 @@ const SESSION_TTL_MS = 24 * 60 * 60 * 1000
 const MAX_SESSIONS = 2000
 /** Nadie llena esto de verdad en menos de un minuto. */
 const MIN_FILL_MS = 60_000
+
+/** El sitio es abierto: si algo se rompe, que puedan venir a mirarlo. */
+const REPO = 'https://github.com/BipBop-Labs/bipbop.cl'
 
 /** Envíos en curso, para que un doble Enter no mande dos veces. */
 const sending = new Set<string>()
@@ -280,19 +288,16 @@ function expiredNotice(): Array<Line> {
 
 /** El estado en que queda la terminal después de procesar algo. */
 function state(session: Session, lines: Array<Line>): ShellReply {
-  if (session.done) {
-    return { sessionId: session.id, lines, prompt: '', mode: 'done' }
-  }
-  if (session.step === null) {
-    return { sessionId: session.id, lines, prompt: '$', mode: 'shell' }
-  }
+  const base = { sessionId: session.id, version: VERSION, lines }
+
+  if (session.done) return { ...base, prompt: '', mode: 'done' }
+  if (session.step === null) return { ...base, prompt: '$', mode: 'shell' }
   if (session.step >= STEPS.length) {
-    return { sessionId: session.id, lines, prompt: '(Enter)', mode: 'confirm' }
+    return { ...base, prompt: '(Enter)', mode: 'confirm' }
   }
   const step = STEPS[session.step]
   return {
-    sessionId: session.id,
-    lines,
+    ...base,
     prompt: step.prompt,
     mode: step.kind === 'file' ? 'attach' : 'field',
     max:
@@ -543,11 +548,22 @@ async function send(session: Session, ip: string): Promise<Array<Line>> {
     ]
   } catch (error) {
     if (error instanceof CvRejected) return err(error.message)
-    console.error('[shell] no se pudo entregar', error)
-    return err(
-      'No pudimos recibir tu postulación ahora. Tus respuestas siguen acá,',
-      'presiona Enter para intentarlo de nuevo.',
-    )
+
+    const motivo = error instanceof Error ? error.message : String(error)
+    console.error(`[shell] no se pudo guardar (${session.id}): ${motivo}`)
+    return [
+      ...err(
+        'Se rompió algo de nuestro lado, no tuyo.',
+        'Tus respuestas siguen acá: presiona Enter para reintentar.',
+      ),
+      ...muted(
+        '',
+        `motivo: ${motivo}`,
+        `ref: ${session.id}`,
+        'Si se repite, cuéntanos qué pasó y lo arreglamos:',
+        `${REPO}/issues/new`,
+      ),
+    ]
   } finally {
     sending.delete(session.id)
   }
@@ -673,5 +689,11 @@ export function runAttach(
 /** Primera carga de la página. */
 export function greet(sessionId?: string): ShellReply {
   const { session } = getSession(sessionId)
-  return state(session, [])
+  if (session.step === null || session.done) return state(session, [])
+
+  // Recargó la página con una postulación a medias: la retomamos.
+  return state(session, [
+    ...muted('Retomando tu postulación donde la dejaste.'),
+    ...askCurrent(session),
+  ])
 }

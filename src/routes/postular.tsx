@@ -35,6 +35,7 @@ type Line = {
 
 type Reply = {
   sessionId: string
+  version: string
   lines: Array<Line>
   prompt: string
   mode: 'shell' | 'field' | 'attach' | 'confirm' | 'sending' | 'done'
@@ -88,6 +89,7 @@ function Postular() {
   const [dragging, setDragging] = useState(false)
 
   const session = useRef<string | undefined>(undefined)
+  const version = useRef<string | undefined>(undefined)
   const inputEl = useRef<HTMLTextAreaElement>(null)
   const fileEl = useRef<HTMLInputElement>(null)
   const scroller = useRef<HTMLDivElement>(null)
@@ -95,31 +97,82 @@ function Postular() {
   const mode = reply?.mode ?? 'shell'
   const applying = mode !== 'shell' && mode !== 'done'
 
-  const post = useCallback(async (body: FormData) => {
+  const post = useCallback(async (body: FormData): Promise<boolean> => {
     if (session.current) body.append('sessionId', session.current)
     setBusy(true)
     try {
-      const res = await fetch('/api/shell', { method: 'POST', body })
+      // Un despliegue dura segundos: vale la pena un segundo intento.
+      let res: Response
+      try {
+        res = await fetch('/api/shell', { method: 'POST', body })
+      } catch {
+        await new Promise((r) => setTimeout(r, 1500))
+        res = await fetch('/api/shell', { method: 'POST', body })
+      }
+
       const data = (await res.json()) as Reply & { error?: string }
       if (data.error) {
         setLines((prev) => [...prev, { kind: 'err', text: data.error! }])
-        return
+        return false
       }
+
       session.current = data.sessionId
+      try {
+        localStorage.setItem('postular', data.sessionId)
+      } catch {
+        /* modo incógnito o sin permisos: se sigue igual */
+      }
+
+      // El servidor se reinició con otra versión mientras estábamos acá.
+      const stale = version.current && version.current !== data.version
+      version.current = data.version
+
       setReply(data)
-      setLines((prev) => (data.clear ? data.lines : [...prev, ...data.lines]))
+      setLines((prev) => [
+        ...(data.clear ? [] : prev),
+        ...data.lines,
+        ...(stale
+          ? [
+              {
+                kind: 'muted' as const,
+                text: 'Publicamos una versión nueva del sitio. Recarga la página cuando quieras, no vas a perder nada de lo que llevas escrito.',
+              },
+            ]
+          : []),
+      ])
+      if (data.mode === 'done') {
+        try {
+          localStorage.removeItem('postular')
+        } catch {
+          /* da lo mismo */
+        }
+      }
+      return true
     } catch {
       setLines((prev) => [
         ...prev,
-        { kind: 'err', text: 'sin conexión con el servidor.' },
+        {
+          kind: 'err',
+          text: 'No pudimos hablar con el servidor. Presiona Enter para reintentar, tu texto sigue acá.',
+        },
+        {
+          kind: 'muted',
+          text: 'Si se repite, avísanos: https://github.com/BipBop-Labs/bipbop.cl/issues/new',
+        },
       ])
+      return false
     } finally {
       setBusy(false)
     }
   }, [])
 
-  // Saludo inicial.
+  // Saludo inicial, retomando la sesión que haya quedado de antes.
   useEffect(() => {
+    try {
+      session.current = localStorage.getItem('postular') ?? undefined
+    } catch {
+      /* sin localStorage se empieza de cero */
+    }
     const body = new FormData()
     body.append('greet', '1')
     void post(body)
@@ -185,7 +238,7 @@ function Postular() {
     }
   }
 
-  function onSubmit(event: React.FormEvent) {
+  async function onSubmit(event: React.FormEvent) {
     event.preventDefault()
     if (busy) return
 
@@ -197,8 +250,8 @@ function Postular() {
 
     const body = new FormData()
     body.append('input', input)
-    setInput('')
-    void post(body)
+    // Se borra recién cuando el servidor lo recibió: si falla, no se pierde.
+    if (await post(body)) setInput('')
   }
 
   const over = reply?.max ? input.length > reply.max : false

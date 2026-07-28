@@ -85,7 +85,7 @@ const CONTRACT = {
     400: '{ ok: false, errors: { field: message } }',
     409: 'an application with that email already exists',
     429: 'too many submissions',
-    502: 'delivery failed, retry',
+    500: 'we could not store it, retry',
   },
   limits: { oneApplicationPer: '24h per email', rateLimit: '5 per hour per IP' },
   contact: 'juan@bipbop.cl',
@@ -179,14 +179,14 @@ export const Route = createFileRoute('/api/applications')({
               { status: 400 },
             )
           }
-          console.error('[applications] no se pudo entregar', error)
+          console.error('[applications] no se pudo guardar', error)
           return json(
             {
               ok: false,
               message:
                 'No pudimos recibir tu postulación en este momento. Inténtalo de nuevo en unos minutos.',
             },
-            { status: 502 },
+            { status: 500 },
           )
         }
       },

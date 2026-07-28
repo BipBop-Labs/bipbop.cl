@@ -5,7 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { EMPTY_FIELDS } from '#/lib/application'
 import { Route } from '#/routes/api.applications'
-import { resetState } from './applications'
+import { Route as Route_admin } from '#/routes/api.admin'
+import { listApplications, redeliver, resetState } from './applications'
 import { closeDb } from './db'
 
 const POST = (
@@ -105,9 +106,8 @@ describe('POST /api/applications', () => {
 
     const { url, form } = lastUpload(fetchMock)
     expect(url).toContain(WEBHOOK)
-    expect(url).toContain('wait=true') // necesario para recibir el adjunto
 
-    // El mensaje ES el registro: lleva los datos, el estado y un id.
+    // El mensaje lleva los datos, el estado y un id.
     const payload = String(form.get('payload_json'))
     expect(payload).toContain('Ada Lovelace')
     expect(payload).toContain('ada@example.com')
@@ -205,16 +205,99 @@ describe('POST /api/applications', () => {
     expect(res.status).toBe(429)
   })
 
-  it('deja reintentar si la entrega falla', async () => {
+  it('guarda la postulación aunque Discord falle, y la deja reenviable', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('caído'))
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    expect((await submit()).status).toBe(502)
-    expect(await tempCvDirs()).toEqual([])
-
-    // No quedó marcado como postulado: el mismo correo puede volver a intentar.
-    vi.restoreAllMocks()
-    discordOk()
+    // Para quien postula, salió bien: lo suyo ya está guardado.
     expect((await submit()).status).toBe(200)
+
+    const [app] = listApplications()
+    expect(app.deliveredAt).toBeNull()
+    expect(app.deliveryError).toContain('caído')
+    expect(app.fullName).toBe('Ada Lovelace')
+
+    // Y desde /admin se puede reenviar cuando el webhook vuelva.
+    vi.restoreAllMocks()
+    const fetchMock = discordOk()
+    expect(await redeliver(app.id)).toBe(true)
+    expect(fetchMock).toHaveBeenCalled()
+    expect(listApplications()[0].deliveredAt).not.toBeNull()
+  })
+
+  it('pagina los mensajes largos en vez de que Discord los rechace', async () => {
+    const fetchMock = discordOk()
+    const largo = 'a'.repeat(1200)
+    await submit({
+      answerProject: largo,
+      answerSimplicity: largo,
+      answerAi: largo,
+    })
+
+    // Tres respuestas de 1.200 no caben en un mensaje de 2.000.
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(1)
+    for (const [, init] of fetchMock.mock.calls) {
+      const payload = JSON.parse(
+        String((init!.body as FormData).get('payload_json')),
+      )
+      expect(payload.content.length).toBeLessThanOrEqual(2000)
+    }
+
+    // Nada se recortó: el texto completo viaja repartido.
+    const todo = fetchMock.mock.calls
+      .map(([, init]) =>
+        JSON.parse(String((init!.body as FormData).get('payload_json'))).content,
+      )
+      .join('')
+    expect(todo).toContain(largo)
+  })
+})
+
+describe('POST /api/admin', () => {
+  const ADMIN = (
+    Route_admin.options.server!.handlers as unknown as {
+      POST: (ctx: { request: Request }) => Promise<Response>
+    }
+  ).POST
+
+  const call = (body: Record<string, unknown>) =>
+    ADMIN({
+      request: new Request('http://localhost/api/admin', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+    })
+
+  it('queda cerrado si no hay ADMIN_KEY configurada', async () => {
+    delete process.env.ADMIN_KEY
+    expect((await call({ action: 'list', key: '' })).status).toBe(401)
+    expect((await call({ action: 'list', key: 'loquesea' })).status).toBe(401)
+  })
+
+  it('rechaza una llave equivocada', async () => {
+    process.env.ADMIN_KEY = 'una-llave-suficientemente-larga'
+    expect((await call({ action: 'list', key: 'otra' })).status).toBe(401)
+  })
+
+  it('lista las postulaciones y entrega el CV', async () => {
+    process.env.ADMIN_KEY = 'una-llave-suficientemente-larga'
+    discordOk()
+    await submit()
+
+    const res = await call({ action: 'list', key: process.env.ADMIN_KEY })
+    const data = await res.json()
+    expect(data.applications).toHaveLength(1)
+    expect(data.applications[0].fullName).toBe('Ada Lovelace')
+    // El CV no viaja en el listado.
+    expect(JSON.stringify(data)).not.toContain('%PDF')
+
+    const cv = await call({
+      action: 'cv',
+      id: data.applications[0].id,
+      key: process.env.ADMIN_KEY,
+    })
+    expect(cv.headers.get('content-type')).toBe('application/pdf')
+    expect(new Uint8Array(await cv.arrayBuffer())).toEqual(PDF)
   })
 })
