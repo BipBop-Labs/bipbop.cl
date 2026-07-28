@@ -88,6 +88,7 @@ Cómo postular
 Ten a mano tu CV en PDF y el enlace a algo que hayas construido.
 Toma unos 15 minutos. No hay filtro automático, lo leemos nosotros.
 
+Descripción completa:      cat cargo.md
 Con quién vas a trabajar:  cat equipo.txt
 Consultas del cargo:       juan@bipbop.cl`
 
@@ -141,6 +142,74 @@ Si llegaste hasta acá, pásala al postular:
 
 No cambia si te contratamos, pero nos dice algo de ti.`
 
+export const CARGO = `Software Engineer, descripción completa
+=======================================
+
+Estamos buscando Software Engineer con experiencia para sumarse a
+BipBop Labs y trabajar en Revi.
+
+Revi es una plataforma de asistentes de IA para tramitar permisos,
+impulsada por la Cámara Chilena de la Construcción y utilizada hoy en
+12 municipios. BipBop Labs es el equipo que la desarrolla y la hace
+crecer.  https://ia-revi.cl
+
+Somos un equipo de tres personas. Trabajamos cerca de quienes usan el
+producto, entendemos dónde se traban y convertimos eso en mejoras,
+nuevas funcionalidades y nuevos flujos. También estamos llevando el
+modelo a otros organismos del Estado: ahora estamos trabajando en su
+implementación para la Dirección General de Aguas.
+
+El rol
+------
+
+El rol mezcla ingeniería y producto. La idea es que puedas tomar un
+problema todavía poco definido, entenderlo, decidir qué vale la pena
+construir, llevarlo a producción y observar qué pasa después.
+
+Buscamos experiencia sólida con Python y TypeScript, además de
+autonomía para diseñar, implementar y operar soluciones en la nube.
+Hoy usamos GCP, FastAPI, LangGraph, ChromaDB, Next.js y Langfuse, pero
+el stack cambia cuando aparece una alternativa más simple o adecuada.
+
+Nos importa mucho el ownership: hacerse cargo de un desarrollo de
+principio a fin, tomar buenas decisiones con información incompleta y
+mantener las soluciones lo más simples posible.
+
+También buscamos a alguien que ya tenga la IA incorporada en su forma
+de trabajar. Acá la usamos todos los días para investigar, programar,
+revisar, probar y documentar. Lo importante no es solo usarla, sino
+mantener criterio propio y poder explicar por qué una solución quedó
+como quedó, qué se verificó y qué se descartó.
+
+Cómo trabajamos
+---------------
+
+100% remoto, de lunes a viernes, de 9:00 a 18:00. Durante el día nos
+mantenemos conectados en Discord para comunicarnos, pedir ayuda y
+resolver cosas juntos. Tenemos una daily en la mañana y después cada
+persona organiza sus desarrollos y se hace responsable de ellos.
+
+Al ser un equipo pequeño hay bastante autonomía, pero no trabajamos
+aislados. Cuando un problema lo necesita, nos metemos juntos a
+pensarlo y sacarlo adelante.
+
+Estamos implementando ciclos de cuatro semanas: tres de desarrollo e
+iteración, y una de cooldown para construir herramientas internas,
+mantener la codebase y revisar el estado del arte.
+
+Renta
+-----
+
+$2.000.000 a $2.400.000 líquidos al mes, según experiencia y
+trayectoria. Incluimos una suscripción a Claude Max 5x.
+
+Postular
+--------
+
+  ./postular
+
+Consultas sobre el cargo: juan@bipbop.cl`
+
 export const POSTULAR_HELP = `./postular, postulación a BipBop Labs
 
 Te vamos a pedir, en orden:
@@ -164,6 +233,7 @@ Se sale con :q, como en vim.
 /** Lo que ve "ls". Los que empiezan con punto solo salen con "ls -a". */
 export const FILES: Record<string, string> = {
   'README.md': README,
+  'cargo.md': CARGO,
   'equipo.txt': EQUIPO,
   'agents.md': AGENTS,
   '.flag': FLAG_FILE,
