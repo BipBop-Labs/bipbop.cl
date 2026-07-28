@@ -68,7 +68,16 @@ type Session = {
   flag: boolean
   sending: boolean
   done: boolean
+  /** Enlace a la grabación de PostHog, si el replay está activo. */
+  replay: string
+  /** Qué comandos corrió y qué archivos leyó, en orden. */
+  log: Array<Trace>
 }
+
+export type Trace = { at: number; text: string }
+
+/** No guardamos una bitácora infinita: con lo último alcanza para entender. */
+const MAX_TRACE = 120
 
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000
 const MAX_SESSIONS = 2000
@@ -122,6 +131,8 @@ function saveSession(session: Session) {
         draft: session.draft,
         flag: session.flag,
         done: session.done,
+        replay: session.replay,
+        log: session.log,
       }),
       session.cv?.bytes ?? null,
       session.cv?.name ?? null,
@@ -141,10 +152,13 @@ function getSession(id?: string): { session: Session; expired: boolean } {
     const state = JSON.parse(row.state) as Pick<
       Session,
       'step' | 'draft' | 'flag' | 'done'
-    >
+    > &
+      Partial<Pick<Session, 'replay' | 'log'>>
     const session: Session = {
       id: row.id,
       createdAt: row.created_at,
+      replay: '',
+      log: [],
       ...state,
       cv: row.cv ? { bytes: row.cv, name: row.cv_name ?? 'cv.pdf' } : null,
       sending: sending.has(row.id),
@@ -165,6 +179,8 @@ function getSession(id?: string): { session: Session; expired: boolean } {
     flag: false,
     sending: false,
     done: false,
+    replay: '',
+    log: [],
   }
   saveSession(session)
   // Si traía un id que ya no está, lo que había se perdió y hay que decirlo.
@@ -181,6 +197,8 @@ export type Pending = {
   email: string
   hasCv: boolean
   written: number
+  replay: string
+  log: Array<Trace>
   /** Lo que lleva escrito, para poder rescatarlo a mano si hace falta. */
   draft: {
     github: string
@@ -208,7 +226,13 @@ export function listPendingSessions(): Array<Pending> {
   }>
 
   return rows
-    .map((row) => ({ row, state: JSON.parse(row.state) as Session }))
+    .map((row) => ({
+      row,
+      state: JSON.parse(row.state) as Session & {
+        replay?: string
+        log?: Array<Trace>
+      },
+    }))
     .filter(({ state }) => state.step !== null && !state.done)
     .map(({ row, state }) => ({
       id: row.id,
@@ -223,6 +247,8 @@ export function listPendingSessions(): Array<Pending> {
         state.draft.answerProject.length +
         state.draft.answerSimplicity.length +
         state.draft.answerAi.length,
+      replay: state.replay ?? '',
+      log: state.log ?? [],
       draft: {
         github: state.draft.github,
         linkedin: state.draft.linkedin,
@@ -325,6 +351,12 @@ const STEPS: Array<Step> = [
   },
 ]
 
+/** Deja constancia de lo que hizo, para poder mirarlo después desde /admin. */
+function trace(session: Session, text: string) {
+  session.log.push({ at: Date.now(), text })
+  if (session.log.length > MAX_TRACE) session.log.splice(0, session.log.length - MAX_TRACE)
+}
+
 /** Se sale como en vim. */
 function isQuit(input: string): boolean {
   return [':q', ':q!', ':quit', ':wq'].includes(input.trim())
@@ -422,6 +454,7 @@ function startApply(session: Session, flag: boolean): Array<Line> {
   session.draft = { ...EMPTY_FIELDS }
   session.cv = null
   if (flag) session.flag = true
+  trace(session, flag ? 'inició ./postular con la flag' : 'inició ./postular')
 
   return [
     ...head('BipBop Labs, postulación.'),
@@ -574,6 +607,7 @@ function attachCv(
 
   const onCvStep = STEPS[session.step]?.kind === 'file'
   session.cv = { bytes: file.bytes, name: file.name }
+  trace(session, `adjuntó ${file.name} (${Math.ceil(file.bytes.byteLength / 1024)} KB)`)
 
   const recibido = out(
     `adjuntado: ${file.name} (${Math.ceil(file.bytes.byteLength / 1024)} KB)`,
@@ -621,9 +655,12 @@ async function send(session: Session, ip: string): Promise<Array<Line>> {
     const record = await submitApplication(fields, session.cv, {
       source: 'terminal',
       flag: session.flag,
+      replayUrl: session.replay,
+      activity: session.log,
     })
     // Se cobra recién ahora: los intentos fallidos no gastan cuota.
     recordHit(ip, 'apply')
+    trace(session, 'envió la postulación')
     session.done = true
     session.cv = null // el PDF ya viajó, no lo dejamos guardado
     return [
@@ -666,8 +703,10 @@ export async function runShell(
   sessionId: string | undefined,
   input: string,
   ip: string,
+  replay = '',
 ): Promise<ShellReply> {
   const { session, expired } = getSession(sessionId)
+  if (replay) session.replay = replay
 
   if (session.done) return state(session, [])
 
@@ -685,6 +724,7 @@ export async function runShell(
 
   // Todavía no empieza a postular: es un comando.
   if (session.step === null) {
+    if (input.trim()) trace(session, `$ ${input.trim()}`)
     const lines = runCommand(session, input)
     const out = reply([...echo, ...lines])
     if (input.trim() === 'clear') return { ...out, lines: [], clear: true }
@@ -754,6 +794,15 @@ export function completeInput(
   const done = matches.length === 1
   const completion = [...rest, done ? `${completed} ` : completed].join(' ')
 
+  // Usar Tab dice algo de quién está al otro lado, así que queda anotado.
+  trace(
+    session,
+    `⇥ ${input || '(vacío)'} → ${
+      matches.length > 1 ? matches.join(' ') : completion.trim()
+    }`,
+  )
+  saveSession(session)
+
   return {
     ...base,
     completion,
@@ -766,8 +815,10 @@ export function completeInput(
 export function runAttach(
   sessionId: string | undefined,
   file: { bytes: Uint8Array; name: string; type: string },
+  replay = '',
 ): ShellReply {
   const { session, expired } = getSession(sessionId)
+  if (replay) session.replay = replay
   if (expired) {
     return state(session, expiredNotice())
   }
@@ -779,8 +830,9 @@ export function runAttach(
 }
 
 /** Primera carga de la página. */
-export function greet(sessionId?: string): ShellReply {
+export function greet(sessionId?: string, replay = ''): ShellReply {
   const { session } = getSession(sessionId)
+  if (replay) session.replay = replay
   if (session.step === null || session.done) return state(session, [])
 
   // Recargó la página con una postulación a medias: la retomamos.

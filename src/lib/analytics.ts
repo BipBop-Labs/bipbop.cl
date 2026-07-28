@@ -13,6 +13,19 @@ export function startAnalytics() {
   })
 }
 
+/**
+ * Enlace a la grabación de esta sesión, apuntando al momento actual. Vacío si
+ * el replay está apagado en el proyecto o PostHog todavía no arranca.
+ */
+export function replayUrl(): string {
+  if (typeof window === 'undefined') return ''
+  try {
+    return posthog.get_session_replay_url?.({ withTimestamp: true }) ?? ''
+  } catch {
+    return ''
+  }
+}
+
 export function capture(event: string, props?: Record<string, unknown>) {
   if (typeof window === 'undefined') return
   posthog.capture(event, props)

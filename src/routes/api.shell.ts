@@ -30,6 +30,7 @@ export const Route = createFileRoute('/api/shell')({
         const sessionId = (form.get('sessionId') as string) || undefined
         const cv = form.get('cv')
         const ip = clientIp(request)
+        const replay = String(form.get('replay') ?? '')
 
         // Tope por IP: freno contra scripts, alto para no castigar a un CGNAT.
         if (isRateLimited(ip, 'origin')) {
@@ -48,7 +49,7 @@ export const Route = createFileRoute('/api/shell')({
           recordHit(sessionId, 'shell')
         }
 
-        if (form.get('greet')) return json(greet(sessionId))
+        if (form.get('greet')) return json(greet(sessionId, replay))
 
         if (form.get('complete')) {
           return json(
@@ -62,12 +63,12 @@ export const Route = createFileRoute('/api/shell')({
           }
           const bytes = new Uint8Array(await cv.arrayBuffer())
           return json(
-            runAttach(sessionId, { bytes, name: cv.name, type: cv.type }),
+            runAttach(sessionId, { bytes, name: cv.name, type: cv.type }, replay),
           )
         }
 
         const input = String(form.get('input') ?? '')
-        return json(await runShell(sessionId, input, ip))
+        return json(await runShell(sessionId, input, ip, replay))
       },
     },
   },

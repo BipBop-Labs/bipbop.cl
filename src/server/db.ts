@@ -60,6 +60,21 @@ export function getDb(): DatabaseSync {
     CREATE INDEX IF NOT EXISTS applications_email ON applications (email);
   `)
 
+  // Columnas agregadas después: CREATE TABLE IF NOT EXISTS no las añade solo.
+  const columnas = new Set(
+    (db.prepare('PRAGMA table_info(applications)').all() as Array<{
+      name: string
+    }>).map((c) => c.name),
+  )
+  for (const [nombre, tipo] of [
+    ['replay_url', 'TEXT'],
+    ['activity', 'TEXT'],
+  ]) {
+    if (!columnas.has(nombre)) {
+      db.exec(`ALTER TABLE applications ADD COLUMN ${nombre} ${tipo}`)
+    }
+  }
+
   return db
 }
 

@@ -11,6 +11,8 @@ export const Route = createFileRoute('/admin')({
   component: Admin,
 })
 
+type Trace = { at: number; text: string }
+
 type Application = {
   id: string
   createdAt: string
@@ -26,6 +28,8 @@ type Application = {
   answerAi: string
   cvName: string
   cvSize: number
+  replayUrl: string
+  activity: Array<Trace>
   deliveredAt: string | null
   deliveryError: string | null
 }
@@ -40,6 +44,8 @@ type Pending = {
   email: string
   hasCv: boolean
   written: number
+  replay: string
+  log: Array<Trace>
   draft: {
     github: string
     linkedin: string
@@ -55,6 +61,53 @@ const QUESTIONS: Array<[keyof Application, string]> = [
   ['answerSimplicity', 'Ownership y simplificación'],
   ['answerAi', 'Trabajo con IA'],
 ]
+
+/** Lo que hizo en la terminal antes de postular. */
+function Bitacora({ log, replay }: { log: Array<Trace>; replay: string }) {
+  if (!log.length && !replay) return null
+
+  return (
+    <details className="mt-3 border-t border-line pt-2">
+      <summary className="cursor-pointer text-[0.8rem] text-ink-3">
+        Qué hizo en la terminal ({log.length} pasos)
+      </summary>
+
+      {replay ? (
+        <p className="mt-3">
+          <a
+            href={replay}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="border-b border-success text-[0.85rem] text-success no-underline"
+          >
+            🎥 Ver la grabación en PostHog
+          </a>
+        </p>
+      ) : null}
+
+      <ol className="mt-3 grid gap-1 font-mono text-[0.78rem]">
+        {log.map((t, i) => (
+          <li key={i} className="flex gap-3">
+            <span className="shrink-0 text-ink-3">
+              {new Date(t.at).toLocaleTimeString('es-CL')}
+            </span>
+            <span
+              className={
+                t.text.startsWith('$')
+                  ? 'text-success'
+                  : t.text.startsWith('⇥')
+                    ? 'text-ink-3'
+                    : 'text-ink-2'
+              }
+            >
+              {t.text}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </details>
+  )
+}
 
 function Admin() {
   const [key, setKey] = useState('')
@@ -107,6 +160,16 @@ function Admin() {
     const saved = sessionStorage.getItem('adminKey')
     if (saved) void load(saved)
   }, [load])
+
+  // Al llegar desde el enlace de Discord, saltar a esa postulación.
+  useEffect(() => {
+    if (!apps?.length) return
+    const buscada = new URLSearchParams(location.search).get('a')
+    if (!buscada) return
+    document
+      .getElementById(`app-${buscada}`)
+      ?.scrollIntoView({ block: 'center' })
+  }, [apps])
 
   async function downloadCv(app: Application) {
     const res = await call({ action: 'cv', id: app.id }, key)
@@ -167,6 +230,10 @@ function Admin() {
   }
 
   const pendientes = apps.filter((a) => !a.deliveredAt).length
+  const destacada =
+    typeof location === 'undefined'
+      ? null
+      : new URLSearchParams(location.search).get('a')
 
   return (
     <main className="mx-auto max-w-[880px] px-6 py-16">
@@ -231,6 +298,8 @@ function Admin() {
                   </button>
                 </div>
 
+                <Bitacora log={p.log ?? []} replay={p.replay} />
+
                 {p.written > 0 || p.draft.project ? (
                   <details className="mt-2 border-t border-line pt-2">
                     <summary className="cursor-pointer text-[0.8rem] text-ink-3">
@@ -274,7 +343,10 @@ function Admin() {
         {apps.map((app) => (
           <article
             key={app.id}
-            className="rounded-[6px] border border-line bg-surface p-6"
+            id={`app-${app.id}`}
+            className={`rounded-[6px] border bg-surface p-6 ${
+              app.id === destacada ? 'border-success' : 'border-line'
+            }`}
           >
             <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
               <div>
@@ -329,6 +401,8 @@ function Admin() {
                 </p>
               </div>
             ))}
+
+            <Bitacora log={app.activity ?? []} replay={app.replayUrl} />
 
             {app.deliveredAt ? null : (
               <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-line pt-3">

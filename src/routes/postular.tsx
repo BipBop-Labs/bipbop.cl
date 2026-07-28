@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { replayUrl } from '#/lib/analytics'
+
 export const Route = createFileRoute('/postular')({
   head: () => ({
     meta: [
@@ -99,6 +101,9 @@ function Postular() {
 
   const post = useCallback(async (body: FormData): Promise<boolean> => {
     if (session.current) body.append('sessionId', session.current)
+    // Para poder ver después cómo llenó el formulario, si el replay está activo.
+    const replay = replayUrl()
+    if (replay) body.append('replay', replay)
     setBusy(true)
     try {
       // Un despliegue dura segundos: vale la pena un segundo intento.

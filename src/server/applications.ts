@@ -13,6 +13,9 @@ import { inspectPdf, safeCvName } from './pdf'
 const DEDUPE_WINDOW_MS = 24 * 60 * 60 * 1000
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
 
+/** Para armar los enlaces que van en el mensaje de Discord. */
+const SITE = process.env.SITE_URL || 'https://bipbop.cl'
+
 /** Discord corta el mensaje en 2.000 caracteres, así que va paginado. */
 const DISCORD_LIMIT = 1900
 /** Más que esto no se pagina: el resto se manda como archivo adjunto. */
@@ -35,7 +38,16 @@ export type Bucket = keyof typeof RATE_LIMIT_MAX
 /** Por dónde llegó: la terminal de /postular o el API documentado. */
 export type Source = 'terminal' | 'api'
 
-export type Meta = { source: Source; flag: boolean }
+export type Trace = { at: number; text: string }
+
+export type Meta = {
+  source: Source
+  flag: boolean
+  /** Grabación de PostHog de cómo llenó el formulario, si está activa. */
+  replayUrl?: string
+  /** Qué comandos corrió y qué archivos leyó antes de postular. */
+  activity?: Array<Trace>
+}
 
 export type Application = ApplicationFields &
   Meta & {
@@ -44,6 +56,8 @@ export type Application = ApplicationFields &
     status: 'new'
     cvName: string
     cvSize: number
+    replayUrl: string
+    activity: Array<Trace>
     /** null mientras no haya llegado a Discord. */
     deliveredAt: string | null
     deliveryError: string | null
@@ -104,6 +118,8 @@ type Row = {
   answer_ai: string
   cv_name: string
   cv_size: number
+  replay_url: string | null
+  activity: string | null
   delivered_at: number | null
   delivery_error: string | null
 }
@@ -125,6 +141,8 @@ function toApplication(row: Row): Application {
     answerAi: row.answer_ai,
     cvName: row.cv_name,
     cvSize: row.cv_size,
+    replayUrl: row.replay_url ?? '',
+    activity: row.activity ? (JSON.parse(row.activity) as Array<Trace>) : [],
     deliveredAt: row.delivered_at
       ? new Date(row.delivered_at).toISOString()
       : null,
@@ -134,7 +152,7 @@ function toApplication(row: Row): Application {
 
 const COLUMNS = `id, created_at, status, source, flag, full_name, email, github,
   linkedin, project, answer_project, answer_simplicity, answer_ai, cv_name,
-  cv_size, delivered_at, delivery_error`
+  cv_size, replay_url, activity, delivered_at, delivery_error`
 
 export function listApplications(): Array<Application> {
   return (
@@ -153,31 +171,63 @@ export function getCv(
   return row ? { bytes: row.cv, name: row.cv_name } : undefined
 }
 
-/** El mensaje ES el registro: lleva todo, sin recortar las respuestas. */
+/**
+ * El mensaje ES el registro. Empieza con aire y un título grande para que en
+ * el canal se note entre la conversación, y las respuestas van citadas para
+ * que se distinga lo que escribió la persona de lo que ponemos nosotros.
+ */
 function discordMessage(app: Application): string {
-  const badges = [
-    app.source === 'api' ? '🤖 vía API (agente)' : '⌨️ vía terminal',
+  const cuando = new Date(app.createdAt).toLocaleString('es-CL', {
+    timeZone: 'America/Santiago',
+    dateStyle: 'short',
+    timeStyle: 'short',
+  })
+
+  const marcas = [
+    app.source === 'api' ? '🤖 por API, con agente' : '⌨️ por la terminal',
     ...(app.flag ? ['🔑 encontró la flag'] : []),
+    cuando,
   ]
 
+  /**
+   * Citado: así el markdown que escriba el postulante no rompe el mensaje.
+   * Los saltos llegan como \r\n desde el multipart, hay que contemplarlo.
+   */
+  const citar = (texto: string) =>
+    texto
+      .split(/\r?\n/)
+      .map((linea) => `> ${linea}`)
+      .join('\n')
+
+  // Discord recorta el espacio del principio, así que el aire se hace con un
+  // carácter invisible (braille en blanco) en su propia línea.
+  const aire = '⠀'
+
   return [
-    '**Nueva postulación · Software Engineer**',
-    badges.join(' · '),
-    `**${app.fullName}** · ${app.email}`,
-    `GitHub: ${app.github}`,
-    `LinkedIn: ${app.linkedin}`,
-    `Proyecto: ${app.project}`,
+    aire,
+    '# 🐧 ALERTA, NUEVO POSTULANTE',
     '',
-    '**Lo que construiste**',
-    app.answerProject,
+    `## ${app.fullName}`,
+    app.email,
+    `-# ${marcas.join(' · ')}`,
+    `-# 🔎 [abrir en el panel](${SITE}/admin?a=${app.id})${
+      app.replayUrl ? ` · 🎥 [ver cómo lo llenó](${app.replayUrl})` : ''
+    }`,
     '',
-    '**Ownership y simplificación**',
-    app.answerSimplicity,
+    `**GitHub** ${app.github}`,
+    `**LinkedIn** ${app.linkedin}`,
+    `**Proyecto** ${app.project}`,
     '',
-    '**Trabajo con IA**',
-    app.answerAi,
+    '### Lo que construiste',
+    citar(app.answerProject),
     '',
-    `\`new\` · \`${app.id}\``,
+    '### Ownership y simplificación',
+    citar(app.answerSimplicity),
+    '',
+    '### Trabajo con IA',
+    citar(app.answerAi),
+    '',
+    `-# ${app.status} · ${app.id}`,
   ].join('\n')
 }
 
@@ -314,8 +364,8 @@ export async function submitApplication(
       `INSERT INTO applications (
          id, created_at, status, source, flag, full_name, email, github,
          linkedin, project, answer_project, answer_simplicity, answer_ai,
-         cv, cv_name, cv_size
-       ) VALUES (?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         cv, cv_name, cv_size, replay_url, activity
+       ) VALUES (?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
@@ -333,6 +383,8 @@ export async function submitApplication(
       cv.bytes,
       cv.name,
       cv.bytes.byteLength,
+      meta.replayUrl ?? '',
+      JSON.stringify(meta.activity ?? []),
     )
 
   const app = toApplication(

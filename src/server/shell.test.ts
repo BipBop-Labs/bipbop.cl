@@ -3,8 +3,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { EMPTY_FIELDS } from '#/lib/application'
 import { resetState } from './applications'
 import { closeDb, getDb } from './db'
+import { fakeDiscord } from './discord-fake'
 import {
   completeInput,
   greet,
@@ -23,14 +25,12 @@ function text(reply: { lines: Array<{ text: string }> }) {
   return reply.lines.map((l) => l.text).join('\n')
 }
 
+/**
+ * Discord con sus límites de verdad. Si un cambio produce un mensaje que
+ * Discord rechazaría, estos tests se caen en vez de pasar en verde.
+ */
 function discordOk() {
-  // Una Response nueva por llamada: el body solo se puede leer una vez.
-  return vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-    Response.json({
-      id: '123456789',
-      attachments: [{ url: 'https://cdn.discord.test/cv.pdf' }],
-    }),
-  )
+  return fakeDiscord().mock
 }
 
 beforeEach(async () => {
@@ -91,9 +91,8 @@ describe('comandos', () => {
   })
 })
 
-describe('postulación', () => {
-  /** Recorre los ocho pasos y deja la sesión lista para enviar. */
-  async function fill(sessionId: string) {
+/** Recorre los ocho pasos y deja la sesión lista para enviar. */
+async function fill(sessionId: string) {
     await runShell(sessionId, 'Ada Lovelace', IP)
     await runShell(sessionId, 'ada@example.com', IP)
     await runShell(sessionId, 'ada', IP)
@@ -105,9 +104,10 @@ describe('postulación', () => {
     })
     await runShell(sessionId, 'https://ada.dev/engine construí el motor.', IP)
     await runShell(sessionId, 'Descarté los engranajes extra.', IP)
-    return runShell(sessionId, 'Uso IA y verifico todo.', IP)
-  }
+  return runShell(sessionId, 'Uso IA y verifico todo.', IP)
+}
 
+describe('postulación', () => {
   it('pide los datos, adjunta el CV y envía', async () => {
     const fetchMock = discordOk()
     const { sessionId } = greet()
@@ -129,7 +129,7 @@ describe('postulación', () => {
     )
     expect(payload).toContain('Ada Lovelace')
     expect(payload).toContain('https://github.com/ada')
-    expect(payload).toContain('vía terminal')
+    expect(payload).toContain('por la terminal')
     expect(payload).not.toContain('encontró la flag')
   })
 
@@ -417,5 +417,217 @@ describe('sesiones de una versión anterior del cuestionario', () => {
     const enviada = await runShell(id, '', IP)
     expect(enviada.mode).toBe('done')
     expect(fetchMock).toHaveBeenCalled()
+  })
+})
+
+describe('sesiones guardadas con otra versión del cuestionario', () => {
+  /**
+   * El flujo tenía nueve pasos y ahora tiene ocho. Las sesiones guardadas
+   * apuntan a un índice que ya no significa lo mismo, y eso dejó a alguien
+   * "listo para enviar" con una respuesta vacía. Ningún índice viejo puede
+   * volver a dejar pasar una postulación incompleta.
+   */
+  const FLUJO_VIEJO = [
+    'fullName',
+    'email',
+    'github',
+    'linkedin',
+    'project',
+    'cv',
+    'answerProject',
+    'answerSimplicity',
+    'answerAi',
+  ]
+
+  function plantar(step: number, draft: Record<string, string>, conCv = true) {
+    const id = `vieja-${step}`
+    getDb()
+      .prepare(
+        `INSERT INTO sessions (id, created_at, updated_at, state, cv, cv_name)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        id,
+        Date.now() - 600_000,
+        Date.now(),
+        JSON.stringify({
+          step,
+          draft: { ...EMPTY_FIELDS, ...draft },
+          flag: false,
+          done: false,
+        }),
+        conCv ? PDF : null,
+        conCv ? 'cv.pdf' : null,
+      )
+    return id
+  }
+
+  /** Lo que llevaba escrito quien estaba en el paso N del flujo viejo. */
+  function draftHasta(indice: number) {
+    const draft: Record<string, string> = {}
+    const valores: Record<string, string> = {
+      fullName: 'Ada Lovelace',
+      email: 'ada@example.com',
+      github: 'ada',
+      linkedin: 'ada',
+      project: 'https://ada.dev/engine',
+      answerProject: 'https://ada.dev/engine construí el motor.',
+      answerSimplicity: 'Descarté los engranajes.',
+      answerAi: 'Uso IA y verifico.',
+    }
+    for (const campo of FLUJO_VIEJO.slice(0, indice)) {
+      if (campo !== 'cv') draft[campo] = valores[campo]
+    }
+    return draft
+  }
+
+  for (let step = 0; step <= FLUJO_VIEJO.length; step++) {
+    it(`no se salta preguntas viniendo del paso viejo ${step}`, async () => {
+      const fetchMock = discordOk()
+      const id = plantar(step, draftHasta(step), step > 5)
+
+      // Enter vacío: la única forma de que envíe es que no falte nada.
+      const reply = await runShell(id, '', IP)
+
+      if (reply.mode === 'done') {
+        const enviado = String(
+          (fetchMock.mock.calls[0][1]!.body as FormData).get('payload_json'),
+        )
+        for (const pregunta of [
+          'Lo que construiste',
+          'Ownership y simplificación',
+          'Trabajo con IA',
+        ]) {
+          expect(enviado).toContain(pregunta)
+        }
+        // Ninguna sección puede quedar vacía.
+        expect(enviado).not.toMatch(/\*\*Trabajo con IA\*\*\n\n/)
+      } else {
+        // Si no envió, tiene que estar pidiendo algo que efectivamente falta.
+        expect(fetchMock).not.toHaveBeenCalled()
+        expect(reply.mode).not.toBe('confirm')
+      }
+    })
+  }
+
+  it('el caso real: índice 8 del flujo viejo con la pregunta de IA en blanco', async () => {
+    const fetchMock = discordOk()
+    const id = plantar(8, { ...draftHasta(8) })
+
+    const retomada = greet(id)
+    expect(retomada.mode).toBe('field')
+    expect(text(retomada)).toContain('Trabajo con IA')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('bitácora de la terminal', () => {
+  it('anota los comandos y los archivos que leyó', async () => {
+    const { sessionId } = greet()
+    await runShell(sessionId, 'ls', IP)
+    await runShell(sessionId, 'cat README.md', IP)
+    await runShell(sessionId, 'cat equipo.txt', IP)
+    await runShell(sessionId, 'ls -a', IP)
+
+    // La bitácora se puede leer desde /admin apenas empieza a postular.
+    await runShell(sessionId, './postular', IP)
+    const [pendiente] = listPendingSessions()
+    const textos = pendiente.log.map((t) => t.text)
+
+    expect(textos).toContain('$ ls')
+    expect(textos).toContain('$ cat README.md')
+    expect(textos).toContain('$ cat equipo.txt')
+    expect(textos).toContain('$ ls -a')
+    expect(textos).toContain('inició ./postular')
+  })
+
+  it('deja constancia de la flag y del CV', async () => {
+    const { sessionId } = greet()
+    await runShell(sessionId, `./postular --flag ${FLAG_VALUE}`, IP)
+    runAttach(sessionId, { bytes: PDF, name: 'mi-cv.pdf', type: 'application/pdf' })
+
+    const textos = listPendingSessions()[0].log.map((t) => t.text)
+    expect(textos).toContain('inició ./postular con la flag')
+    expect(textos.some((t) => t.includes('adjuntó mi-cv.pdf'))).toBe(true)
+  })
+
+  it('no guarda las respuestas como si fueran comandos', async () => {
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP)
+    await runShell(sessionId, 'Ada Lovelace', IP)
+    await runShell(sessionId, 'ada@example.com', IP)
+
+    const textos = listPendingSessions()[0].log.map((t) => t.text)
+    expect(textos).not.toContain('$ Ada Lovelace')
+    expect(textos).not.toContain('$ ada@example.com')
+  })
+
+  it('viaja con la postulación, junto al enlace de la grabación', async () => {
+    const discord = fakeDiscord()
+    const { sessionId } = greet(undefined, 'https://us.posthog.com/replay/abc?t=42')
+    await runShell(sessionId, 'cat README.md', IP, 'https://us.posthog.com/replay/abc?t=42')
+    await runShell(sessionId, './postular', IP)
+    await fill(sessionId)
+    vi.setSystemTime(Date.now() + 5 * 60_000)
+    await runShell(sessionId, '', IP)
+
+    expect(discord.text()).toContain('https://us.posthog.com/replay/abc?t=42')
+  })
+
+  it('no corta la bitácora sin límite', async () => {
+    const { sessionId } = greet()
+    for (let i = 0; i < 200; i++) await runShell(sessionId, `ls ${i}`, IP)
+    await runShell(sessionId, './postular', IP)
+    expect(listPendingSessions()[0].log.length).toBeLessThanOrEqual(120)
+  })
+})
+
+describe('uso de Tab', () => {
+  it('queda anotado en la bitácora', async () => {
+    const { sessionId } = greet()
+    completeInput(sessionId, 'cat READ')
+    await runShell(sessionId, './postular', IP)
+
+    const textos = listPendingSessions()[0].log.map((t) => t.text)
+    expect(textos).toContain('⇥ cat READ → cat README.md')
+  })
+
+  it('anota también cuando había varias opciones', async () => {
+    const { sessionId } = greet()
+    completeInput(sessionId, 'c') // cat y clear
+    await runShell(sessionId, './postular', IP)
+
+    const [anotado] = listPendingSessions()[0].log.filter((t) =>
+      t.text.startsWith('⇥'),
+    )
+    expect(anotado.text).toContain('cat')
+    expect(anotado.text).toContain('clear')
+  })
+
+  it('no anota nada si Tab no encontró qué completar', async () => {
+    const { sessionId } = greet()
+    completeInput(sessionId, 'zzzz')
+    await runShell(sessionId, './postular', IP)
+
+    const tabs = listPendingSessions()[0].log.filter((t) =>
+      t.text.startsWith('⇥'),
+    )
+    expect(tabs).toHaveLength(0)
+  })
+
+  it('viaja con la postulación', async () => {
+    const discord = fakeDiscord()
+    const { sessionId } = greet()
+    completeInput(sessionId, 'cat equ')
+    await runShell(sessionId, './postular', IP)
+    await fill(sessionId)
+    vi.setSystemTime(Date.now() + 5 * 60_000)
+    await runShell(sessionId, '', IP)
+
+    void discord
+    // La bitácora queda guardada en la fila, no solo en la sesión.
+    const { listApplications } = await import('./applications')
+    const [app] = listApplications()
+    expect(app.activity.some((t) => t.text.startsWith('⇥'))).toBe(true)
   })
 })

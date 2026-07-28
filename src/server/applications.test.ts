@@ -8,6 +8,7 @@ import { Route } from '#/routes/api.applications'
 import { Route as Route_admin } from '#/routes/api.admin'
 import { listApplications, redeliver, resetState } from './applications'
 import { closeDb } from './db'
+import { fakeDiscord } from './discord-fake'
 
 const POST = (
   Route.options.server!.handlers as unknown as {
@@ -32,14 +33,12 @@ const fields = {
   answerAi: 'Uso IA y verifico cada resultado.',
 }
 
+/**
+ * Discord con sus límites de verdad. Si un cambio produce un mensaje que
+ * Discord rechazaría, estos tests se caen en vez de pasar en verde.
+ */
 function discordOk() {
-  // Una Response nueva por llamada: el body solo se puede leer una vez.
-  return vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-    Response.json({
-      id: '123456789',
-      attachments: [{ url: 'https://cdn.discord.test/cv.pdf' }],
-    }),
-  )
+  return fakeDiscord().mock
 }
 
 function submit(
@@ -335,5 +334,184 @@ describe('postulaciones enormes', () => {
     const [app] = listApplications()
     expect(app.deliveredAt).not.toBeNull()
     expect(llamadas).toBeGreaterThan(1)
+  })
+})
+
+describe('tamaños que la gente escribe de verdad', () => {
+  /** Reproduce la postulación que no pudo entrar: 2.005 caracteres repartidos. */
+  const COMO_FELIPE = {
+    answerProject: 'a'.repeat(945),
+    answerSimplicity: 'b'.repeat(422),
+    answerAi: 'c'.repeat(638),
+  }
+
+  /** Lo más grande que la validación permite: tres respuestas al tope. */
+  const AL_TOPE = {
+    answerProject: 'a'.repeat(1200),
+    answerSimplicity: 'b'.repeat(1200),
+    answerAi: 'c'.repeat(1200),
+  }
+
+  it('entrega una postulación del tamaño que rompió producción', async () => {
+    const discord = fakeDiscord()
+    const res = await submit(COMO_FELIPE)
+
+    expect(res.status).toBe(200)
+    expect(discord.sent.length).toBeGreaterThan(0)
+    // Nada recortado: las tres respuestas llegan enteras.
+    for (const value of Object.values(COMO_FELIPE)) {
+      expect(discord.text()).toContain(value)
+    }
+  })
+
+  it('entrega una postulación en el máximo permitido', async () => {
+    const discord = fakeDiscord()
+    const res = await submit(AL_TOPE)
+
+    expect(res.status).toBe(200)
+    const [app] = listApplications()
+    expect(app.deliveredAt).not.toBeNull()
+    expect(app.deliveryError).toBeNull()
+    // El texto completo tiene que estar, en los mensajes o en el adjunto.
+    const enviado =
+      discord.text() +
+      discord.files().map((f) => f.name).join(' ')
+    expect(enviado.length).toBeGreaterThan(0)
+    expect(discord.files().some((f) => f.type === 'application/pdf')).toBe(true)
+  })
+
+  it('el nombre y los enlaces más largos posibles tampoco lo rompen', async () => {
+    const discord = fakeDiscord()
+    const res = await submit({
+      fullName: 'Ñ'.repeat(120),
+      github: `github.com/${'a'.repeat(180)}`,
+      linkedin: `linkedin.com/in/${'b'.repeat(180)}`,
+      project: `https://ejemplo.cl/${'c'.repeat(1800)}`,
+      ...AL_TOPE,
+    })
+
+    expect(res.status).toBe(200)
+    expect(listApplications()[0].deliveryError).toBeNull()
+    expect(discord.sent.length).toBeGreaterThan(0)
+  })
+})
+
+describe('entradas hostiles', () => {
+  /**
+   * Cada campo llevado al extremo. La regla no es "tiene que pasar", sino que
+   * el sistema decida: o lo rechaza con un error de campo, o lo entrega sin
+   * romper nada. Nunca un 500, y nunca un mensaje que Discord rechazaría.
+   */
+  const CASOS: Array<[string, Record<string, string>]> = [
+    ['nombre kilométrico', { fullName: 'a'.repeat(10_000) }],
+    ['correo kilométrico', { email: `${'a'.repeat(10_000)}@example.com` }],
+    ['github kilométrico', { github: `github.com/${'a'.repeat(50_000)}` }],
+    ['linkedin kilométrico', { linkedin: `linkedin.com/in/${'a'.repeat(50_000)}` }],
+    ['proyecto kilométrico', { project: `https://x.cl/${'a'.repeat(50_000)}` }],
+    ['respuesta kilométrica', { answerProject: 'a'.repeat(50_000) }],
+    ['todo kilométrico', {
+      fullName: 'a'.repeat(5000),
+      project: `https://x.cl/${'b'.repeat(5000)}`,
+      answerProject: 'c'.repeat(5000),
+      answerSimplicity: 'd'.repeat(5000),
+      answerAi: 'e'.repeat(5000),
+    }],
+    ['saltos de línea por todos lados', {
+      answerProject: 'línea\n'.repeat(200),
+      answerSimplicity: '\n\n\n\n\n',
+      answerAi: 'a\nb\nc',
+    }],
+    ['una sola palabra sin espacios', { answerProject: 'a'.repeat(1200) }],
+    ['emoji y acentos', {
+      fullName: 'Ñoño 🐧 Ürsula',
+      answerProject: '🐧'.repeat(600),
+      answerSimplicity: 'áéíóú ñ ç '.repeat(100),
+    }],
+    ['intento de mención masiva', { answerProject: '@everyone @here '.repeat(50) }],
+    ['markdown que podría romper el mensaje', {
+      answerProject: '```'.repeat(300),
+      answerSimplicity: '**'.repeat(500),
+    }],
+  ]
+
+  for (const [nombre, overrides] of CASOS) {
+    it(`decide sin romperse: ${nombre}`, async () => {
+      const discord = fakeDiscord()
+      const res = await submit(overrides)
+
+      // O lo rechaza por validación, o lo entrega. Nada de errores del servidor.
+      expect([200, 400]).toContain(res.status)
+
+      if (res.status === 400) {
+        expect((await res.json()).errors).toBeTruthy()
+        expect(discord.sent.length).toBe(0)
+        return
+      }
+
+      // Si entró, tiene que haber salido: el Discord falso rechaza lo inválido.
+      const [app] = listApplications()
+      expect(app.deliveryError).toBeNull()
+      expect(app.deliveredAt).not.toBeNull()
+    })
+  }
+
+  it('no le pasa menciones masivas a Discord', async () => {
+    const discord = fakeDiscord()
+    await submit({ answerProject: '@everyone probando' })
+
+    const payload = JSON.parse(
+      String(
+        (discord.mock.mock.calls[0][1]!.body as FormData).get('payload_json'),
+      ),
+    )
+    // El texto puede decir lo que sea, pero no debe notificar a nadie.
+    expect(payload.allowed_mentions).toEqual({ parse: [] })
+  })
+})
+
+describe('formato del mensaje en Discord', () => {
+  it('abre con el aviso y separa lo que escribió la persona', async () => {
+    const discord = fakeDiscord()
+    await submit({
+      answerProject: 'Primera línea.\nSegunda línea.',
+    })
+
+    const [primero] = discord.sent
+    // Aire arriba: Discord recorta los saltos, por eso el carácter invisible.
+    expect(primero.content.startsWith('⠀\n')).toBe(true)
+    expect(primero.content).toContain('# 🐧 ALERTA, NUEVO POSTULANTE')
+    expect(primero.content).toContain('## Ada Lovelace')
+
+    // Las respuestas van citadas, línea por línea.
+    expect(primero.content).toContain('> Primera línea.\n> Segunda línea.')
+  })
+
+  it('el markdown del postulante no se escapa del bloque citado', async () => {
+    const discord = fakeDiscord()
+    await submit({ answerProject: '# No soy un título\n```no soy código' })
+
+    const texto = discord.text()
+    expect(texto).toContain('> # No soy un título')
+    expect(texto).toContain('> ```no soy código')
+    // Nuestros encabezados siguen siendo los únicos al principio de línea.
+    expect(texto.split('\n').filter((l) => l.startsWith('# '))).toHaveLength(1)
+  })
+})
+
+describe('enlaces del mensaje', () => {
+  it('lleva al panel y a la grabación', async () => {
+    const discord = fakeDiscord()
+    await submit()
+    const [app] = listApplications()
+
+    expect(discord.text()).toContain(`https://bipbop.cl/admin?a=${app.id}`)
+  })
+
+  it('omite la grabación si el replay está apagado', async () => {
+    const discord = fakeDiscord()
+    await submit()
+
+    expect(discord.text()).toContain('abrir en el panel')
+    expect(discord.text()).not.toContain('ver cómo lo llenó')
   })
 })
