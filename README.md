@@ -127,8 +127,9 @@ Two vector sources are the single source of truth:
 - `public/brand/head.svg` — the penguin head mark, **the** logo
 - `public/brand/body.svg` — full-body penguin, deprecated as a logo (landing hero only)
 
-`public/brand/og.png` is the social preview card. It is hand-made, not script
-output, and it is not the same file as `public/brand/generated/og.png`.
+`public/brand/og-postular.png` is the social preview for `/postular` only. It
+is hand-made rather than script output, which is why it does not live under
+`generated/`. The rest of the site keeps `generated/og.png`.
 
 Everything under `public/brand/generated/` is script output — **never edit
 generated files by hand**. To regenerate after touching a source or the palette:
