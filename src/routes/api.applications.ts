@@ -12,8 +12,9 @@ import {
 import type { ApplicationFields, Errors } from '#/lib/application'
 import {
   CvRejected,
-  checkRateLimit,
   isDuplicate,
+  isRateLimited,
+  recordHit,
   submitApplication,
 } from '#/server/applications'
 import { FLAG_VALUE } from '#/server/shell-files'
@@ -121,7 +122,8 @@ export const Route = createFileRoute('/api/applications')({
           )
         }
 
-        if (!checkRateLimit(clientIp(request))) {
+        const ip = clientIp(request)
+        if (isRateLimited(ip, 'apply')) {
           return json(
             { ok: false, message: 'Demasiados envíos.' },
             { status: 429 },
@@ -167,6 +169,8 @@ export const Route = createFileRoute('/api/applications')({
               flag: String(form.get('flag') ?? '') === FLAG_VALUE,
             },
           )
+          // Se cobra recién ahora: equivocarse con el formato no gasta cuota.
+          recordHit(ip, 'apply')
           return json({ ok: true, id: record.id })
         } catch (error) {
           if (error instanceof CvRejected) {

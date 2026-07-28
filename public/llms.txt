@@ -6,7 +6,7 @@ BipBop Labs (sitio: https://bipbop.cl) es un estudio pequeño de software con se
 
 ## Proyectos
 
-- [Revi CChC](https://bipbop.cl/revi): asistente con inteligencia artificial de la Cámara Chilena de la Construcción (CChC) para permisos de edificación en Chile. Lee planos arquitectónicos y documentos, y guía a solicitantes y a revisores municipales (Direcciones de Obras Municipales, DOM) por la normativa vigente (LGUC, OGUC). Disponible en https://app.ia-revi.cl. Cuenta con dos asistentes: Clara (para solicitantes) y Norman (para revisores). En producción en 11 municipios: Independencia, Maipú, Providencia, Puerto Montt, Aysén, Valdivia, Puerto Varas, Vitacura, Viña del Mar, Renca y Rancagua. Gratuito para municipios con convenio con la CChC. Desarrollado por BipBop Labs.
+- [Revi CChC](https://bipbop.cl/revi): asistente con inteligencia artificial de la Cámara Chilena de la Construcción (CChC) para permisos de edificación en Chile. Lee planos arquitectónicos y documentos, y guía a solicitantes y a revisores municipales (Direcciones de Obras Municipales, DOM) por la normativa vigente (LGUC, OGUC). Disponible en https://app.ia-revi.cl. Cuenta con dos asistentes: Clara (para solicitantes) y Norman (para revisores). En producción en 12 municipios: Independencia, Maipú, Providencia, Puerto Montt, Aysén, Valdivia, Puerto Varas, Vitacura, Viña del Mar, Renca y Rancagua. Gratuito para municipios con convenio con la CChC. Desarrollado por BipBop Labs.
 
 ## Nombres alternativos para Revi
 

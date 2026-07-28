@@ -32,7 +32,8 @@ const fields = {
 }
 
 function discordOk() {
-  return vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+  // Una Response nueva por llamada: el body solo se puede leer una vez.
+  return vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
     Response.json({
       id: '123456789',
       attachments: [{ url: 'https://cdn.discord.test/cv.pdf' }],
@@ -187,10 +188,20 @@ describe('POST /api/applications', () => {
 
 
 
-  it('limita la cantidad de envíos por IP', async () => {
+  it('no gasta cuota en los intentos que rechazamos', async () => {
     discordOk()
-    for (let i = 0; i < 5; i++) await submit({ email: `ada${i}@example.com` })
-    const res = await submit({ email: 'ada6@example.com' })
+    // Un agente afinando el formato se equivoca muchas veces seguidas.
+    for (let i = 0; i < 25; i++) {
+      await submit({ github: 'https://gitlab.com/ada' })
+    }
+    // Y aun así puede postular: solo cuentan las entregadas.
+    expect((await submit()).status).toBe(200)
+  })
+
+  it('corta cuando una IP entrega demasiadas postulaciones', async () => {
+    discordOk()
+    for (let i = 0; i < 20; i++) await submit({ email: `ada${i}@example.com` })
+    const res = await submit({ email: 'otro@example.com' })
     expect(res.status).toBe(429)
   })
 

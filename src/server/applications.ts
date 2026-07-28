@@ -17,10 +17,17 @@ const DEDUPE_WINDOW_MS = 24 * 60 * 60 * 1000
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
 
 /**
- * Dos cuotas distintas. Postular es raro y caro; escribir en la terminal es
- * constante y barato, así que no pueden compartir el mismo contador.
+ * Detrás de una IP residencial o de un CGNAT puede haber un barrio entero, así
+ * que la IP es un tope contra scripts, no el control principal. Lo que
+ * realmente limita postular es el correo, que se deduplica en la base.
+ *
+ *   apply   postulaciones entregadas por IP. Solo cuentan las que salieron:
+ *           equivocarse con el formato no gasta cuota.
+ *   shell   comandos por sesión, no por IP, para que dos personas en la misma
+ *           casa no se quiten el turno.
+ *   origin  tope duro por IP para todo el tráfico de la terminal.
  */
-const RATE_LIMIT_MAX = { apply: 5, shell: 400 }
+const RATE_LIMIT_MAX = { apply: 20, shell: 600, origin: 5000 }
 export type Bucket = keyof typeof RATE_LIMIT_MAX
 
 /** Por dónde llegó: la terminal de /postular o el API documentado. */
@@ -48,22 +55,26 @@ function emailHash(email: string): string {
   return createHash('sha256').update(email.trim().toLowerCase()).digest('hex')
 }
 
-export function checkRateLimit(
-  ip: string,
-  bucket: Bucket = 'apply',
-  now = Date.now(),
-): boolean {
-  const key = `${bucket}:${ip}`
-  const recent = (hits.get(key) ?? []).filter(
+function recent(key: string, bucket: Bucket, now: number): Array<number> {
+  const fresh = (hits.get(`${bucket}:${key}`) ?? []).filter(
     (at) => now - at < RATE_LIMIT_WINDOW_MS,
   )
-  if (recent.length >= RATE_LIMIT_MAX[bucket]) {
-    hits.set(key, recent)
-    return false
-  }
-  recent.push(now)
-  hits.set(key, recent)
-  return true
+  hits.set(`${bucket}:${key}`, fresh)
+  return fresh
+}
+
+/** Consulta sin cobrar, para poder rechazar antes de hacer el trabajo. */
+export function isRateLimited(
+  key: string,
+  bucket: Bucket,
+  now = Date.now(),
+): boolean {
+  return recent(key, bucket, now).length >= RATE_LIMIT_MAX[bucket]
+}
+
+/** Cobra una. En "apply" se llama recién cuando la postulación salió. */
+export function recordHit(key: string, bucket: Bucket, now = Date.now()) {
+  recent(key, bucket, now).push(now)
 }
 
 export function isDuplicate(email: string, now = Date.now()): boolean {

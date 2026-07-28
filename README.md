@@ -80,8 +80,13 @@ built-in `node:sqlite`, no dependency and no extra container): half-finished
 terminal sessions, so a redeploy doesn't wipe what someone was typing, and the
 hash of each email that already applied, so the 24 h duplicate check survives a
 restart. It stores the hash, never the address. It lives in `$DATA_DIR`, mounted
-as a volume. Per-IP rate limits stay in memory, since those are a brake and not
-a record.
+as a volume.
+
+Rate limits stay in memory and are deliberately **not** keyed on IP alone. A
+residential IP or a CGNAT can hide a whole neighbourhood, so the IP is only a
+ceiling against scripts: terminal traffic is counted per session, applications
+are counted per IP but only when one actually goes out (a rejected format costs
+nothing), and the real limit on applying twice is the per-email check above.
 
 See `src/server/applications.ts` for the screening and validation rules.
 

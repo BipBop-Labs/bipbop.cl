@@ -110,7 +110,7 @@ const FAQ = [
     q: '¿Dónde se usa Revi?',
     a: (
       <>
-        Revi está en producción en 11 municipios de Chile: Independencia, Maipú,
+        Revi está en producción en 12 municipios de Chile: Independencia, Maipú,
         Providencia, Puerto Montt, Aysén, Valdivia, Puerto Varas, Vitacura, Viña
         del Mar, Renca y Rancagua.
       </>
@@ -296,7 +296,7 @@ function Revi() {
       </div>
 
       <h2 className={H2}>Dónde se usa Revi</h2>
-      <p className={P}>Revi está en producción en 11 municipios de Chile:</p>
+      <p className={P}>Revi está en producción en 12 municipios de Chile:</p>
       <ul className={UL}>
         {MUNICIPIOS.map((m) => (
           <li key={m}>Municipalidad de {m}</li>

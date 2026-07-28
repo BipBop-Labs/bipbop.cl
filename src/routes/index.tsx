@@ -335,7 +335,7 @@ function ReviCard() {
 
         <div className="mt-8 border-t border-line pt-6">
           <div className="mb-5 text-base text-ink-3">
-            {t('En producción en 11 municipios', 'Live in 11 municipalities')}
+            {t('En producción en 12 municipios', 'Live in 12 municipalities')}
           </div>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] items-center justify-items-center gap-x-5 gap-y-7">
             {MUNICIPALIDADES.map(([file, alt]) => (

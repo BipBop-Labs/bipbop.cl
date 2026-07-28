@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 
 import { MAX_CV_BYTES } from '#/lib/application'
-import { checkRateLimit } from '#/server/applications'
+import { isRateLimited, recordHit } from '#/server/applications'
 import { completeInput, greet, runAttach, runShell } from '#/server/shell'
 
 /**
@@ -29,13 +29,26 @@ export const Route = createFileRoute('/api/shell')({
 
         const sessionId = (form.get('sessionId') as string) || undefined
         const cv = form.get('cv')
+        const ip = clientIp(request)
 
-        // El saludo inicial no consume cuota: es solo abrir la página.
-        if (form.get('greet')) return json(greet(sessionId))
-
-        if (!checkRateLimit(clientIp(request), 'shell')) {
-          return json({ error: 'demasiadas peticiones, espera un momento' }, { status: 429 })
+        // Tope por IP: freno contra scripts, alto para no castigar a un CGNAT.
+        if (isRateLimited(ip, 'origin')) {
+          return json({ error: 'demasiadas peticiones' }, { status: 429 })
         }
+        recordHit(ip, 'origin')
+
+        // El resto se cuenta por sesión: cada pestaña tiene lo suyo.
+        if (sessionId) {
+          if (isRateLimited(sessionId, 'shell')) {
+            return json(
+              { error: 'demasiadas peticiones, espera un momento' },
+              { status: 429 },
+            )
+          }
+          recordHit(sessionId, 'shell')
+        }
+
+        if (form.get('greet')) return json(greet(sessionId))
 
         if (form.get('complete')) {
           return json(
@@ -54,7 +67,7 @@ export const Route = createFileRoute('/api/shell')({
         }
 
         const input = String(form.get('input') ?? '')
-        return json(await runShell(sessionId, input, clientIp(request)))
+        return json(await runShell(sessionId, input, ip))
       },
     },
   },

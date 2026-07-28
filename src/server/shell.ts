@@ -13,8 +13,9 @@ import {
 import type { ApplicationFields, FieldName } from '#/lib/application'
 import {
   CvRejected,
-  checkRateLimit,
   isDuplicate,
+  isRateLimited,
+  recordHit,
   submitApplication,
 } from './applications'
 import {
@@ -499,7 +500,7 @@ function attachCv(
 
 async function send(session: Session, ip: string): Promise<Array<Line>> {
   if (sending.has(session.id)) return []
-  if (!checkRateLimit(ip)) {
+  if (isRateLimited(ip, 'apply')) {
     return err('Demasiadas postulaciones desde aquí. Inténtalo más tarde.')
   }
   if (Date.now() - session.createdAt < MIN_FILL_MS) {
@@ -524,8 +525,10 @@ async function send(session: Session, ip: string): Promise<Array<Line>> {
       source: 'terminal',
       flag: session.flag,
     })
+    // Se cobra recién ahora: los intentos fallidos no gastan cuota.
+    recordHit(ip, 'apply')
     session.done = true
-    session.cv = null // el PDF ya viajó, no lo dejamos en memoria
+    session.cv = null // el PDF ya viajó, no lo dejamos guardado
     return [
       { kind: 'muted', text: '' },
       { kind: 'ok', text: 'Postulación recibida' },

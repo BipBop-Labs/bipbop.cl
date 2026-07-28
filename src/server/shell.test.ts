@@ -17,7 +17,8 @@ function text(reply: { lines: Array<{ text: string }> }) {
 }
 
 function discordOk() {
-  return vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+  // Una Response nueva por llamada: el body solo se puede leer una vez.
+  return vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
     Response.json({
       id: '123456789',
       attachments: [{ url: 'https://cdn.discord.test/cv.pdf' }],
@@ -245,6 +246,22 @@ describe('postulación', () => {
     vi.setSystemTime(Date.now() + 5 * 60_000)
     const reintento = await runShell(otra.sessionId, '', IP)
     expect(text(reintento)).toContain('Ya recibimos una postulación')
+  })
+
+  it('dos personas en la misma IP no se quitan el turno', async () => {
+    // Misma IP (un CGNAT, una oficina, una casa), dos sesiones distintas.
+    const uno = greet()
+    const dos = greet()
+
+    await runShell(uno.sessionId, './postular', IP)
+    await runShell(uno.sessionId, 'Ada Lovelace', IP)
+
+    const otra = await runShell(dos.sessionId, './postular', IP)
+    expect(text(otra)).toContain('¿Cómo te llamas?')
+
+    // Cada sesión avanza por su cuenta.
+    const sigue = await runShell(uno.sessionId, 'ada@example.com', IP)
+    expect(text(sigue)).toContain('GitHub')
   })
 
   it('avisa si la sesión se perdió, en vez de confundir', () => {

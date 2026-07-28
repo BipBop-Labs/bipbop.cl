@@ -79,7 +79,7 @@ export const homeSchema = {
           name: '¿Dónde se usa Revi?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Revi está en producción en 11 municipios de Chile: Independencia, Maipú, Providencia, Puerto Montt, Aysén, Valdivia, Puerto Varas, Vitacura, Viña del Mar, Renca y Rancagua.',
+            text: 'Revi está en producción en 12 municipios de Chile: Independencia, Maipú, Providencia, Puerto Montt, Aysén, Valdivia, Puerto Varas, Vitacura, Viña del Mar, Renca y Rancagua.',
           },
         },
         {
@@ -230,7 +230,7 @@ export const reviSchema = {
           name: '¿Dónde se usa Revi?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Revi está en producción en 11 municipios de Chile: Independencia, Maipú, Providencia, Puerto Montt, Aysén, Valdivia, Puerto Varas, Vitacura, Viña del Mar, Renca y Rancagua.',
+            text: 'Revi está en producción en 12 municipios de Chile: Independencia, Maipú, Providencia, Puerto Montt, Aysén, Valdivia, Puerto Varas, Vitacura, Viña del Mar, Renca y Rancagua.',
           },
         },
         {
