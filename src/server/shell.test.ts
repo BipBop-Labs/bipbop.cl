@@ -1,0 +1,190 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { resetState } from './applications'
+import { completeInput, greet, resetSessions, runAttach, runShell } from './shell'
+import { FLAG_VALUE } from './shell-files'
+
+/** PDF mínimo válido. */
+const PDF = new TextEncoder().encode('%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF\n')
+const IP = '203.0.113.10'
+
+function text(reply: { lines: Array<{ text: string }> }) {
+  return reply.lines.map((l) => l.text).join('\n')
+}
+
+function discordOk() {
+  return vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    Response.json({
+      id: '123456789',
+      attachments: [{ url: 'https://cdn.discord.test/cv.pdf' }],
+    }),
+  )
+}
+
+beforeEach(() => {
+  process.env.DISCORD_WEBHOOK_URL = 'https://discord.test/webhook'
+  resetSessions()
+  resetState()
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
+  vi.useRealTimers()
+})
+
+describe('comandos', () => {
+  it('abre en blanco, sin instrucciones', () => {
+    const reply = greet()
+    expect(reply.lines).toEqual([])
+    expect(reply.mode).toBe('shell')
+    expect(reply.prompt).toBe('$')
+  })
+
+  it('lista y lee archivos', async () => {
+    const { sessionId } = greet()
+    expect(text(await runShell(sessionId, 'ls', IP))).toContain('README.md')
+    expect(text(await runShell(sessionId, 'cat README.md', IP))).toContain(
+      './postular',
+    )
+  })
+
+  it('esconde la flag salvo que la busques con ls -a', async () => {
+    const { sessionId } = greet()
+    expect(text(await runShell(sessionId, 'ls', IP))).not.toContain('.flag')
+
+    const oculto = await runShell(sessionId, 'ls -a', IP)
+    expect(text(oculto)).toContain('.flag')
+    expect(text(await runShell(sessionId, 'cat .flag', IP))).toContain(
+      FLAG_VALUE,
+    )
+  })
+
+  it('avisa cuando el comando no existe', async () => {
+    const { sessionId } = greet()
+    const reply = await runShell(sessionId, 'sudo rm -rf /', IP)
+    expect(reply.lines.some((l) => l.kind === 'err')).toBe(true)
+  })
+
+  it('completa con Tab', () => {
+    const { sessionId } = greet()
+    expect(completeInput(sessionId, 'he').completion).toBe('help ')
+    expect(completeInput(sessionId, 'cat READ').completion).toBe(
+      'cat README.md ',
+    )
+    // Los ocultos solo se completan si ya escribiste el punto.
+    expect(completeInput(sessionId, 'cat ').completion).not.toContain('.flag')
+    expect(completeInput(sessionId, 'cat .fl').completion).toBe('cat .flag ')
+  })
+})
+
+describe('postulación', () => {
+  /** Recorre los nueve pasos y deja la sesión lista para enviar. */
+  async function fill(sessionId: string) {
+    await runShell(sessionId, 'Ada Lovelace', IP)
+    await runShell(sessionId, 'ada@example.com', IP)
+    await runShell(sessionId, 'ada', IP)
+    await runShell(sessionId, 'ada', IP)
+    await runShell(sessionId, 'ada.dev/engine', IP)
+    runAttach(sessionId, {
+      bytes: PDF,
+      name: 'cv.pdf',
+      type: 'application/pdf',
+    })
+    await runShell(sessionId, 'Construí el motor.', IP)
+    await runShell(sessionId, 'Descarté los engranajes extra.', IP)
+    return runShell(sessionId, 'Uso IA y verifico todo.', IP)
+  }
+
+  it('pide los datos, adjunta el CV y envía', async () => {
+    const fetchMock = discordOk()
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP)
+
+    const resumen = await fill(sessionId)
+    expect(resumen.mode).toBe('confirm')
+    expect(text(resumen)).toContain('ada@example.com')
+
+    // Enter vacío envía, pasado el tiempo mínimo de llenado.
+    vi.setSystemTime(Date.now() + 5 * 60_000)
+    const enviado = await runShell(sessionId, '', IP)
+
+    expect(enviado.mode).toBe('done')
+    expect(text(enviado)).toContain('Postulación recibida')
+
+    const payload = String(
+      (fetchMock.mock.calls[0][1]!.body as FormData).get('payload_json'),
+    )
+    expect(payload).toContain('Ada Lovelace')
+    expect(payload).toContain('https://github.com/ada')
+    expect(payload).toContain('vía terminal')
+    expect(payload).not.toContain('encontró la flag')
+  })
+
+  it('marca la postulación cuando trae la flag', async () => {
+    const fetchMock = discordOk()
+    const { sessionId } = greet()
+    await runShell(sessionId, `./postular --flag ${FLAG_VALUE}`, IP)
+    await fill(sessionId)
+
+    vi.setSystemTime(Date.now() + 5 * 60_000)
+    await runShell(sessionId, '', IP)
+
+    const payload = String(
+      (fetchMock.mock.calls[0][1]!.body as FormData).get('payload_json'),
+    )
+    expect(payload).toContain('encontró la flag')
+  })
+
+  it('rechaza una flag inventada', async () => {
+    const { sessionId } = greet()
+    const reply = await runShell(sessionId, './postular --flag bipbop{nope}', IP)
+    expect(reply.mode).toBe('shell')
+    expect(text(reply)).toContain('no es')
+  })
+
+  it('vuelve a preguntar cuando el dato no sirve', async () => {
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP)
+    await runShell(sessionId, 'Ada Lovelace', IP)
+
+    const malo = await runShell(sessionId, 'no-es-un-correo', IP)
+    expect(malo.lines.some((l) => l.kind === 'err')).toBe(true)
+
+    // Sigue en el mismo paso hasta que el dato sea válido.
+    const bueno = await runShell(sessionId, 'ada@example.com', IP)
+    expect(text(bueno)).toContain('GitHub')
+  })
+
+  it('rechaza un PDF que no es PDF', () => {
+    const { sessionId } = greet()
+    void runShell(sessionId, './postular', IP)
+    const reply = runAttach(sessionId, {
+      bytes: new Uint8Array([1, 2, 3, 4]),
+      name: 'cv.pdf',
+      type: 'application/pdf',
+    })
+    expect(reply.lines.some((l) => l.kind === 'err')).toBe(true)
+  })
+
+  it('se sale con :q y no envía nada', async () => {
+    const fetchMock = discordOk()
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP)
+    await runShell(sessionId, 'Ada Lovelace', IP)
+
+    const salida = await runShell(sessionId, ':q', IP)
+    expect(salida.mode).toBe('shell')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('no envía si se completó sospechosamente rápido', async () => {
+    const fetchMock = discordOk()
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP)
+    await fill(sessionId)
+
+    const reply = await runShell(sessionId, '', IP)
+    expect(reply.mode).toBe('confirm')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})

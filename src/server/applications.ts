@@ -8,20 +8,32 @@ import { inspectPdf, safeCvName } from './pdf'
 
 /**
  * Discord es la fuente de verdad: la postulación completa, con el CV adjunto,
- * vive en el canal del equipo. El servidor no guarda nada — el PDF pasa por una
+ * vive en el canal del equipo. El servidor no guarda nada: el PDF pasa por una
  * carpeta temporal que se borra apenas se sube.
  */
 
 const DEDUPE_WINDOW_MS = 24 * 60 * 60 * 1000
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
-const RATE_LIMIT_MAX = 5
 
-export type Application = ApplicationFields & {
-  id: string
-  createdAt: string
-  status: 'new'
-  cv: { url: string; messageId: string; originalName: string; size: number }
-}
+/**
+ * Dos cuotas distintas. Postular es raro y caro; escribir en la terminal es
+ * constante y barato, así que no pueden compartir el mismo contador.
+ */
+const RATE_LIMIT_MAX = { apply: 5, shell: 400 }
+export type Bucket = keyof typeof RATE_LIMIT_MAX
+
+/** Por dónde llegó: la terminal de /postular o el API documentado. */
+export type Source = 'terminal' | 'api'
+
+export type Meta = { source: Source; flag: boolean }
+
+export type Application = ApplicationFields &
+  Meta & {
+    id: string
+    createdAt: string
+    status: 'new'
+    cv: { url: string; messageId: string; originalName: string; size: number }
+  }
 
 /**
  * Ventanas deslizantes en memoria. Se pierden al reiniciar, y está bien: son
@@ -30,16 +42,21 @@ export type Application = ApplicationFields & {
 const hits = new Map<string, Array<number>>()
 const applied = new Map<string, number>()
 
-export function checkRateLimit(ip: string, now = Date.now()): boolean {
-  const recent = (hits.get(ip) ?? []).filter(
+export function checkRateLimit(
+  ip: string,
+  bucket: Bucket = 'apply',
+  now = Date.now(),
+): boolean {
+  const key = `${bucket}:${ip}`
+  const recent = (hits.get(key) ?? []).filter(
     (at) => now - at < RATE_LIMIT_WINDOW_MS,
   )
-  if (recent.length >= RATE_LIMIT_MAX) {
-    hits.set(ip, recent)
+  if (recent.length >= RATE_LIMIT_MAX[bucket]) {
+    hits.set(key, recent)
     return false
   }
   recent.push(now)
-  hits.set(ip, recent)
+  hits.set(key, recent)
   return true
 }
 
@@ -120,14 +137,21 @@ async function deliverCv(
 /** El mensaje ES el registro: lleva todo, incluidos id, fecha y estado. */
 function discordMessage(
   fields: ApplicationFields,
+  meta: Meta,
   id: string,
   createdAt: string,
 ): string {
   const trim = (text: string) =>
     text.length > 900 ? `${text.slice(0, 900)}…` : text
 
+  const badges = [
+    meta.source === 'api' ? '🤖 vía API (agente)' : '⌨️ vía terminal',
+    ...(meta.flag ? ['🔑 encontró la flag'] : []),
+  ]
+
   return [
     '**Nueva postulación · Software Engineer**',
+    badges.join(' · '),
     `**${fields.fullName}** · ${fields.email}`,
     `GitHub: ${fields.github}`,
     `LinkedIn: ${fields.linkedin}`,
@@ -153,6 +177,7 @@ function discordMessage(
 export async function submitApplication(
   fields: ApplicationFields,
   cv: { bytes: Uint8Array; name: string },
+  meta: Meta,
 ): Promise<Application> {
   const id = randomUUID()
   const createdAt = new Date().toISOString()
@@ -160,13 +185,14 @@ export async function submitApplication(
   const attachment = await deliverCv(
     cv.bytes,
     fields,
-    discordMessage(fields, id, createdAt),
+    discordMessage(fields, meta, id, createdAt),
   )
 
   applied.set(fields.email.toLowerCase(), Date.now())
 
   return {
     ...fields,
+    ...meta,
     id,
     createdAt,
     status: 'new',

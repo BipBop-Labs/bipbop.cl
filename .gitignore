@@ -10,3 +10,4 @@ dist
 .nitro
 .output
 src/routeTree.gen.ts
+.tanstack/

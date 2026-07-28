@@ -8,10 +8,11 @@ CSS v4, so the site ships with a server it can grow into.
 
 - `/` — studio landing page
 - `/revi` — Revi CChC, an AI assistant for building permits in Chile (product page)
-- `/postular` — Software Engineer job application form
+- `/postular` — Software Engineer application, as a terminal
 - `/styleguide` — browsable brand style guide
 - `/api/health` — server liveness check
-- `/api/applications` — `POST`, receives the job application
+- `/api/applications` — the documented path for agents (`GET` returns the contract)
+- `/api/shell` — backend for the `/postular` terminal
 
 ## Running it
 
@@ -27,7 +28,7 @@ pnpm check        # tsc --noEmit
 pnpm test         # vitest run
 ```
 
-Copy `.env.example` to `.env` before running the application form locally.
+Copy `.env.example` to `.env` before running the application flow locally.
 
 ## Layout
 
@@ -45,20 +46,38 @@ STYLE.md               brand reference in text form
 
 ## Job applications
 
-`/postular` posts to `/api/applications`. The same validation module runs on
-both sides (`src/lib/application.ts`), so the client and the server can never
-disagree about what a valid application is.
+`/postular` is a terminal. You `ls`, you `cat README.md`, and you run
+`./postular` to apply. It doubles as a filter: someone who can't find their way
+around a shell is not who we're hiring.
+
+**The shell runs server-side** (`src/server/shell.ts`). The browser only sends
+what was typed and paints the lines it gets back, so the commands, the files,
+the question order and the hidden flag never ship in the client bundle. The one
+concession to the metaphor is the CV: drag it onto the window, or press Enter
+to open a file picker.
+
+Two ways in, and we tag which one was used:
+
+- **the terminal**, for people
+- **`POST /api/applications`**, for agents. `GET` on the same path returns the
+  contract as JSON. It's advertised to machines (an `ai-agent-endpoint` meta
+  tag, and `public/llms.txt`) but not shown on the page. Applying through it
+  counts in your favour, and Discord shows which route each one took.
+
+There's a flag hidden in the terminal. Finding it and passing it with
+`./postular --flag <value>` marks the application in Discord. It changes
+nothing formally; it's just signal.
 
 **Discord is the source of truth.** The server stores nothing: the request is
 screened for abuse, the CV is validated inside a temporary folder and uploaded
-to the team's webhook, and the message itself carries the whole application —
+to the team's webhook, and the message itself carries the whole application:
 fields, an id, a timestamp and `status: new`. The temp folder is deleted either
 way, so the PDF never stays on disk. If Discord is down nothing is recorded and
 the candidate can simply retry.
 
-Spam and duplicate protection (honeypot, fill time, per-IP rate limit, one
+Spam and duplicate protection (minimum fill time, per-IP rate limits, one
 application per email per 24 h) lives in memory, so it resets on restart. That's
-deliberate — it's a brake, not a record.
+deliberate: it's a brake, not a record.
 
 See `src/server/applications.ts` for the screening and validation rules.
 

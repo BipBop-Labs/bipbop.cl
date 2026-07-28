@@ -181,19 +181,7 @@ describe('POST /api/applications', () => {
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 
-  it('descarta los envíos que caen en el honeypot', async () => {
-    const fetchMock = discordOk()
-    const res = await submit({ website: 'https://spam.example' })
-    expect(res.status).toBe(200)
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
 
-  it('rechaza los envíos instantáneos', async () => {
-    const fetchMock = discordOk()
-    const res = await submit({ startedAt: String(Date.now()) })
-    expect(res.status).toBe(400)
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
 
   it('limita la cantidad de envíos por IP', async () => {
     discordOk()
