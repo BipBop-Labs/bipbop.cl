@@ -631,3 +631,63 @@ describe('uso de Tab', () => {
     expect(app.activity.some((t) => t.text.startsWith('⇥'))).toBe(true)
   })
 })
+
+describe('copiar y pegar', () => {
+  it('anota en qué pregunta estaba cuando pegó', async () => {
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP)
+    await runShell(sessionId, 'Ada Lovelace', IP)
+    await runShell(sessionId, 'ada@example.com', IP)
+    await runShell(sessionId, 'ada', IP)
+    await runShell(sessionId, 'ada', IP)
+    runAttach(sessionId, { bytes: PDF, name: 'cv.pdf', type: 'application/pdf' })
+
+    // Pega la respuesta de la pregunta del proyecto.
+    await runShell(sessionId, 'https://ada.dev/x construí el motor.', IP, '', [
+      'pegó 1100 caracteres',
+    ])
+
+    const textos = listPendingSessions()[0].log.map((t) => t.text)
+    const pegado = textos.find((t) => t.startsWith('📋'))
+    expect(pegado).toContain('pegó 1100 caracteres')
+    expect(pegado).toContain('Algo que hayas construido')
+  })
+
+  it('anota cuando copia la pantalla', async () => {
+    const { sessionId } = greet()
+    await runShell(sessionId, 'cat README.md', IP, '', [
+      'copió 3200 caracteres de la pantalla',
+    ])
+    await runShell(sessionId, './postular', IP)
+
+    const textos = listPendingSessions()[0].log.map((t) => t.text)
+    expect(textos.some((t) => t.includes('copió 3200 caracteres'))).toBe(true)
+  })
+
+  it('no deja que el navegador nos llene la bitácora', async () => {
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP, '', [
+      'a'.repeat(500), // una nota enorme
+    ])
+
+    const [nota] = listPendingSessions()[0].log.filter((t) =>
+      t.text.startsWith('📋'),
+    )
+    // El recorte lo hace la ruta; acá se comprueba que igual queda acotado.
+    expect(nota.text.length).toBeLessThan(700)
+  })
+
+  it('viaja con la postulación', async () => {
+    const discord = fakeDiscord()
+    const { sessionId } = greet()
+    await runShell(sessionId, './postular', IP, '', ['pegó 900 caracteres'])
+    await fill(sessionId)
+    vi.setSystemTime(Date.now() + 5 * 60_000)
+    await runShell(sessionId, '', IP)
+
+    void discord
+    const { listApplications } = await import('./applications')
+    const [app] = listApplications()
+    expect(app.activity.some((t) => t.text.includes('pegó 900'))).toBe(true)
+  })
+})

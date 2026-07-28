@@ -351,6 +351,22 @@ const STEPS: Array<Step> = [
   },
 ]
 
+/** El encabezado del paso actual, por ejemplo "7/8 Ownership y simplificación". */
+function stepLabel(session: Session): string {
+  if (session.step === null || session.step >= STEPS.length) return ''
+  return STEPS[session.step].ask[0].trim()
+}
+
+/**
+ * Anota lo que el navegador nos cuenta: copiar la pantalla, pegar una
+ * respuesta, seleccionar todo. Se marca aparte porque es lo que más dice
+ * sobre cómo trabajó, y va con la pregunta en la que estaba.
+ */
+export function noteFromClient(session: Session, nota: string) {
+  const donde = stepLabel(session)
+  trace(session, `📋 ${nota}${donde ? ` · ${donde}` : ''}`)
+}
+
 /** Deja constancia de lo que hizo, para poder mirarlo después desde /admin. */
 function trace(session: Session, text: string) {
   session.log.push({ at: Date.now(), text })
@@ -704,9 +720,12 @@ export async function runShell(
   input: string,
   ip: string,
   replay = '',
+  notas: Array<string> = [],
 ): Promise<ShellReply> {
   const { session, expired } = getSession(sessionId)
   if (replay) session.replay = replay
+  // Se anota antes de procesar: la nota es sobre el paso en el que estaba.
+  for (const nota of notas) noteFromClient(session, nota)
 
   if (session.done) return state(session, [])
 
@@ -816,9 +835,11 @@ export function runAttach(
   sessionId: string | undefined,
   file: { bytes: Uint8Array; name: string; type: string },
   replay = '',
+  notas: Array<string> = [],
 ): ShellReply {
   const { session, expired } = getSession(sessionId)
   if (replay) session.replay = replay
+  for (const nota of notas) noteFromClient(session, nota)
   if (expired) {
     return state(session, expiredNotice())
   }
@@ -830,9 +851,15 @@ export function runAttach(
 }
 
 /** Primera carga de la página. */
-export function greet(sessionId?: string, replay = ''): ShellReply {
+export function greet(
+  sessionId?: string,
+  replay = '',
+  notas: Array<string> = [],
+): ShellReply {
   const { session } = getSession(sessionId)
   if (replay) session.replay = replay
+  for (const nota of notas) noteFromClient(session, nota)
+  if (notas.length) saveSession(session)
   if (session.step === null || session.done) return state(session, [])
 
   // Recargó la página con una postulación a medias: la retomamos.

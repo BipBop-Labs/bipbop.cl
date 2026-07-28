@@ -63,6 +63,25 @@ type Reply = {
   completion?: string
 }
 
+/**
+ * Guiños para cuando alguien se lleva el texto a un modelo o pega una
+ * respuesta armada afuera. No es trampa, y no queremos que lo parezca: el
+ * mensaje es la forma de decirles que lo vemos y que está bien.
+ */
+const GUINOS = {
+  copiar: [
+    'te lo llevas a un modelo, ¿cierto? dale, para eso está ahí.',
+    'copiado. si le preguntas a una IA, la tercera pregunta va justo de eso.',
+    'llévatelo tranquilo. después cuéntanos qué te respondió y qué descartaste.',
+  ],
+  pegar: [
+    'eso venía de otra parte. no hay drama, solo asegúrate de poder defenderlo.',
+    'pegado de una. lo que nos interesa no es de dónde salió, es qué revisaste.',
+    'buena. ahora léelo de nuevo y bórrale lo que no sea tuyo.',
+  ],
+  todo: ['ctrl+a, el clásico. está todo tuyo.'],
+} as const
+
 const LINE_COLOR: Record<Line['kind'], string> = {
   in: 'text-ink',
   out: 'text-ink-2',
@@ -106,6 +125,10 @@ function Postular() {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [dragging, setDragging] = useState(false)
+  const [guino, setGuino] = useState('')
+
+  /** Lo que queremos contarle al servidor en la próxima petición. */
+  const notas = useRef<Array<string>>([])
 
   const session = useRef<string | undefined>(undefined)
   const version = useRef<string | undefined>(undefined)
@@ -118,6 +141,7 @@ function Postular() {
 
   const post = useCallback(async (body: FormData): Promise<boolean> => {
     if (session.current) body.append('sessionId', session.current)
+    for (const nota of notas.current.splice(0)) body.append('note', nota)
     // Para poder ver después cómo llenó el formulario, si el replay está activo.
     const replay = replayUrl()
     if (replay) body.append('replay', replay)
@@ -254,7 +278,38 @@ function Postular() {
     }
   }
 
+  /** Muestra el guiño un rato y lo deja anotado. */
+  const guiñar = useCallback(
+    (tipo: keyof typeof GUINOS, nota: string) => {
+      const opciones = GUINOS[tipo]
+      setGuino(opciones[Math.floor(Math.random() * opciones.length)])
+      notas.current.push(nota)
+    },
+    [],
+  )
+
+  useEffect(() => {
+    if (!guino) return
+    const t = setTimeout(() => setGuino(''), 7000)
+    return () => clearTimeout(t)
+  }, [guino])
+
+  // Copiar la salida de la terminal: se están llevando el enunciado.
+  useEffect(() => {
+    const onCopy = () => {
+      const largo = window.getSelection()?.toString().length ?? 0
+      if (largo > 120) guiñar('copiar', `copió ${largo} caracteres de la pantalla`)
+    }
+    document.addEventListener('copy', onCopy)
+    return () => document.removeEventListener('copy', onCopy)
+  }, [guiñar])
+
   function onKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // Ctrl+A sobre la terminal, no dentro de una respuesta a medio escribir.
+    if ((event.ctrlKey || event.metaKey) && event.key === 'a' && !input) {
+      guiñar('todo', 'seleccionó todo con ctrl+a')
+    }
+
     if (event.key === 'Tab') {
       event.preventDefault()
       if (!busy) void complete()
@@ -350,6 +405,10 @@ function Postular() {
               rows={1}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
+              onPaste={(e) => {
+                const largo = e.clipboardData.getData('text').length
+                if (largo > 200) guiñar('pegar', `pegó ${largo} caracteres`)
+              }}
               disabled={busy}
               enterKeyHint="send"
               autoComplete="off"
@@ -378,6 +437,19 @@ function Postular() {
           </form>
         )}
       </div>
+
+      {guino ? (
+        <aside
+          role="status"
+          onClick={() => setGuino('')}
+          className="motion-safe-opacity fixed right-6 bottom-6 z-50 max-w-[min(26rem,calc(100vw-3rem))] animate-rise cursor-pointer rounded-[4px] border border-success bg-surface px-4 py-3 text-[0.8rem] leading-[1.5] text-ink-2 opacity-0 shadow-[0_4px_20px_color-mix(in_srgb,var(--color-ink)_12%,transparent)] max-[720px]:right-3 max-[720px]:bottom-3 max-[720px]:left-3"
+        >
+          <span aria-hidden="true" className="mr-2">
+            🐧
+          </span>
+          {guino}
+        </aside>
+      ) : null}
 
       <input
         ref={fileEl}

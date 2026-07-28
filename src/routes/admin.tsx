@@ -69,7 +69,11 @@ function Bitacora({ log, replay }: { log: Array<Trace>; replay: string }) {
   return (
     <details className="mt-3 border-t border-line pt-2">
       <summary className="cursor-pointer text-[0.8rem] text-ink-3">
-        Qué hizo en la terminal ({log.length} pasos)
+        Qué hizo en la terminal ({log.length} pasos
+        {log.filter((t) => t.text.startsWith('📋')).length > 0
+          ? `, ${log.filter((t) => t.text.startsWith('📋')).length} de copiar y pegar`
+          : ''}
+        )
       </summary>
 
       {replay ? (
@@ -97,7 +101,9 @@ function Bitacora({ log, replay }: { log: Array<Trace>; replay: string }) {
                   ? 'text-success'
                   : t.text.startsWith('⇥')
                     ? 'text-ink-3'
-                    : 'text-ink-2'
+                    : t.text.startsWith('📋')
+                      ? 'text-danger'
+                      : 'text-ink-2'
               }
             >
               {t.text}

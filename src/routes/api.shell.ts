@@ -31,6 +31,11 @@ export const Route = createFileRoute('/api/shell')({
         const cv = form.get('cv')
         const ip = clientIp(request)
         const replay = String(form.get('replay') ?? '')
+        // Lo que el navegador nos cuenta: copió, pegó, seleccionó todo.
+        const notas = form
+          .getAll('note')
+          .map((n) => String(n).slice(0, 120))
+          .slice(0, 5)
 
         // Tope por IP: freno contra scripts, alto para no castigar a un CGNAT.
         if (isRateLimited(ip, 'origin')) {
@@ -49,7 +54,7 @@ export const Route = createFileRoute('/api/shell')({
           recordHit(sessionId, 'shell')
         }
 
-        if (form.get('greet')) return json(greet(sessionId, replay))
+        if (form.get('greet')) return json(greet(sessionId, replay, notas))
 
         if (form.get('complete')) {
           return json(
@@ -63,12 +68,12 @@ export const Route = createFileRoute('/api/shell')({
           }
           const bytes = new Uint8Array(await cv.arrayBuffer())
           return json(
-            runAttach(sessionId, { bytes, name: cv.name, type: cv.type }, replay),
+            runAttach(sessionId, { bytes, name: cv.name, type: cv.type }, replay, notas),
           )
         }
 
         const input = String(form.get('input') ?? '')
-        return json(await runShell(sessionId, input, ip, replay))
+        return json(await runShell(sessionId, input, ip, replay, notas))
       },
     },
   },
