@@ -33,6 +33,19 @@ function discordOk() {
   return fakeDiscord().mock
 }
 
+/**
+ * Postular parte con el binario sin permisos, así que el chmod es parte del
+ * flujo. Los tests que van al cuestionario entran por acá.
+ */
+async function start(
+  sessionId: string | undefined,
+  input = './postular',
+  ...rest: [string?, string?, Array<string>?]
+) {
+  await runShell(sessionId, 'chmod +x postular', IP)
+  return runShell(sessionId, input, ...(rest as [string, string, Array<string>]))
+}
+
 beforeEach(async () => {
   closeDb()
   process.env.DATA_DIR = await mkdtemp(join(tmpdir(), 'bipbop-db-'))
@@ -79,6 +92,62 @@ describe('comandos', () => {
     expect(reply.lines.some((l) => l.kind === 'err')).toBe(true)
   })
 
+  it('no deja correr el binario hasta que le dan permisos', async () => {
+    const { sessionId } = greet()
+
+    const denegado = await runShell(sessionId, './postular', IP)
+    expect(denegado.mode).toBe('shell')
+    expect(text(denegado)).toContain('permiso denegado')
+
+    // Sin permisos ls lo muestra pelado; con permisos, con asterisco.
+    expect(text(await runShell(sessionId, 'ls', IP))).toContain('\npostular')
+    await runShell(sessionId, 'chmod +x postular', IP)
+    expect(text(await runShell(sessionId, 'ls', IP))).toContain('postular*')
+
+    expect((await runShell(sessionId, './postular', IP)).mode).toBe('field')
+  })
+
+  it('acepta las formas de chmod que se usan de verdad', async () => {
+    for (const modo of ['+x', 'u+x', 'a+x', '755', '777', '0700']) {
+      const { sessionId } = greet()
+      await runShell(sessionId, `chmod ${modo} postular`, IP)
+      expect((await runShell(sessionId, './postular', IP)).mode).toBe('field')
+    }
+
+    // Con ruta, con glob, o con las dos cosas.
+    for (const arg of ['./postular', '*', 'postular*', 'p*', '.']) {
+      const { sessionId } = greet()
+      await runShell(sessionId, `chmod +x ${arg}`, IP)
+      expect((await runShell(sessionId, './postular', IP)).mode).toBe('field')
+    }
+  })
+
+  it('un chmod sin el bit de ejecución deja el binario como estaba', async () => {
+    const { sessionId } = greet()
+
+    const sinX = await runShell(sessionId, 'chmod 644 postular', IP)
+    expect(text(sinX)).toContain('sigue sin ser ejecutable')
+    expect((await runShell(sessionId, './postular', IP)).mode).toBe('shell')
+
+    await runShell(sessionId, 'chmod +x postular', IP)
+    const quitado = await runShell(sessionId, 'chmod -x postular', IP)
+    expect(text(quitado)).toContain('ya no es ejecutable')
+    expect(text(await runShell(sessionId, './postular', IP))).toContain(
+      'permiso denegado',
+    )
+
+    const raro = await runShell(sessionId, 'chmod hola postular', IP)
+    expect(raro.lines.some((l) => l.kind === 'err')).toBe(true)
+  })
+
+  it('cat postular muestra el binario, no el flujo', async () => {
+    const { sessionId } = greet()
+    const reply = await runShell(sessionId, 'cat postular', IP)
+    expect(text(reply)).toContain('ELF')
+    expect(text(reply)).toContain('/lib64/ld-linux-x86-64.so.2')
+    expect(reply.mode).toBe('shell')
+  })
+
   it('completa con Tab', () => {
     const { sessionId } = greet()
     expect(completeInput(sessionId, 'he').completion).toBe('help ')
@@ -113,7 +182,7 @@ describe('postulación', () => {
   it('pide los datos, adjunta el CV y envía', async () => {
     const fetchMock = discordOk()
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
 
     const resumen = await fill(sessionId)
     expect(resumen.mode).toBe('confirm')
@@ -135,10 +204,29 @@ describe('postulación', () => {
     expect(payload).not.toContain('encontró la flag')
   })
 
+  it('cuenta en Discord cuándo cayó el chmod', async () => {
+    const fetchMock = discordOk()
+    const { sessionId } = greet()
+
+    // Choca dos veces con el permiso denegado antes de darse cuenta.
+    await runShell(sessionId, './postular', IP)
+    await runShell(sessionId, './postular --help', IP)
+    await start(sessionId, './postular', IP)
+    await fill(sessionId)
+
+    vi.setSystemTime(Date.now() + 5 * 60_000)
+    await runShell(sessionId, '', IP)
+
+    const payload = String(
+      (fetchMock.mock.calls[0][1]!.body as FormData).get('payload_json'),
+    )
+    expect(payload).toContain('chmod después de 2 permisos denegados')
+  })
+
   it('marca la postulación cuando trae la flag', async () => {
     const fetchMock = discordOk()
     const { sessionId } = greet()
-    await runShell(sessionId, `./postular --flag ${FLAG_VALUE}`, IP)
+    await start(sessionId, `./postular --flag ${FLAG_VALUE}`, IP)
     await fill(sessionId)
 
     vi.setSystemTime(Date.now() + 5 * 60_000)
@@ -152,14 +240,14 @@ describe('postulación', () => {
 
   it('rechaza una flag inventada', async () => {
     const { sessionId } = greet()
-    const reply = await runShell(sessionId, './postular --flag bipbop{nope}', IP)
+    const reply = await start(sessionId, './postular --flag bipbop{nope}', IP)
     expect(reply.mode).toBe('shell')
     expect(text(reply)).toContain('no es')
   })
 
   it('vuelve a preguntar cuando el dato no sirve', async () => {
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     await runShell(sessionId, 'Ada Lovelace', IP)
 
     const malo = await runShell(sessionId, 'no-es-un-correo', IP)
@@ -172,7 +260,7 @@ describe('postulación', () => {
 
   it('acepta el PDF aunque lo suelten antes de que le toque', async () => {
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
 
     // Lo arrastran apenas empiezan, en el paso 1.
     const temprano = runAttach(sessionId, {
@@ -196,7 +284,7 @@ describe('postulación', () => {
   it('saca el enlace del propio relato del proyecto', async () => {
     const fetchMock = discordOk()
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     await fill(sessionId)
 
     vi.setSystemTime(Date.now() + 5 * 60_000)
@@ -210,7 +298,7 @@ describe('postulación', () => {
 
   it('exige el enlace dentro de la respuesta del proyecto', async () => {
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     await runShell(sessionId, 'Ada Lovelace', IP)
     await runShell(sessionId, 'ada@example.com', IP)
     await runShell(sessionId, 'ada', IP)
@@ -223,7 +311,7 @@ describe('postulación', () => {
 
   it('retoma la postulación al recargar la página', async () => {
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     await runShell(sessionId, 'Ada Lovelace', IP)
 
     // El navegador se recarga y saluda con la misma sesión guardada.
@@ -235,7 +323,7 @@ describe('postulación', () => {
 
   it('sobrevive a un reinicio del servidor', async () => {
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     await runShell(sessionId, 'Ada Lovelace', IP)
     runAttach(sessionId, { bytes: PDF, name: 'cv.pdf', type: 'application/pdf' })
 
@@ -254,7 +342,7 @@ describe('postulación', () => {
   it('recuerda quién ya postuló aunque se reinicie', async () => {
     discordOk()
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     await fill(sessionId)
     vi.setSystemTime(Date.now() + 5 * 60_000)
     await runShell(sessionId, '', IP)
@@ -262,7 +350,7 @@ describe('postulación', () => {
     closeDb()
 
     const otra = greet()
-    await runShell(otra.sessionId, './postular', IP)
+    await start(otra.sessionId, './postular', IP)
     await fill(otra.sessionId)
     vi.setSystemTime(Date.now() + 5 * 60_000)
     const reintento = await runShell(otra.sessionId, '', IP)
@@ -274,10 +362,10 @@ describe('postulación', () => {
     const uno = greet()
     const dos = greet()
 
-    await runShell(uno.sessionId, './postular', IP)
+    await start(uno.sessionId, './postular', IP)
     await runShell(uno.sessionId, 'Ada Lovelace', IP)
 
-    const otra = await runShell(dos.sessionId, './postular', IP)
+    const otra = await start(dos.sessionId, './postular', IP)
     expect(text(otra)).toContain('¿Cómo te llamas?')
 
     // Cada sesión avanza por su cuenta.
@@ -307,7 +395,7 @@ describe('postulación', () => {
 
   it('rechaza un PDF que no es PDF', () => {
     const { sessionId } = greet()
-    void runShell(sessionId, './postular', IP)
+    void start(sessionId, './postular', IP)
     const reply = runAttach(sessionId, {
       bytes: new Uint8Array([1, 2, 3, 4]),
       name: 'cv.pdf',
@@ -319,7 +407,7 @@ describe('postulación', () => {
   it('se sale con :q y no envía nada', async () => {
     const fetchMock = discordOk()
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     await runShell(sessionId, 'Ada Lovelace', IP)
 
     const salida = await runShell(sessionId, ':q', IP)
@@ -330,7 +418,7 @@ describe('postulación', () => {
   it('no envía si se completó sospechosamente rápido', async () => {
     const fetchMock = discordOk()
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     await fill(sessionId)
 
     const reply = await runShell(sessionId, '', IP)
@@ -342,7 +430,7 @@ describe('postulación', () => {
 describe('rescate desde /admin', () => {
   it('lista las postulaciones a medio terminar con su avance', async () => {
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     await runShell(sessionId, 'Ada Lovelace', IP)
     await runShell(sessionId, 'ada@example.com', IP)
 
@@ -362,7 +450,7 @@ describe('rescate desde /admin', () => {
 
   it('el enlace de rescate retoma donde quedó', async () => {
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     await runShell(sessionId, 'Ada Lovelace', IP)
 
     // Es lo que hace /postular?s=<id>: saludar con esa sesión.
@@ -536,7 +624,7 @@ describe('bitácora de la terminal', () => {
     await runShell(sessionId, 'ls -a', IP)
 
     // La bitácora se puede leer desde /admin apenas empieza a postular.
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     const [pendiente] = listPendingSessions()
     const textos = pendiente.log.map((t) => t.text)
 
@@ -549,7 +637,7 @@ describe('bitácora de la terminal', () => {
 
   it('deja constancia de la flag y del CV', async () => {
     const { sessionId } = greet()
-    await runShell(sessionId, `./postular --flag ${FLAG_VALUE}`, IP)
+    await start(sessionId, `./postular --flag ${FLAG_VALUE}`, IP)
     runAttach(sessionId, { bytes: PDF, name: 'mi-cv.pdf', type: 'application/pdf' })
 
     const textos = listPendingSessions()[0].log.map((t) => t.text)
@@ -559,7 +647,7 @@ describe('bitácora de la terminal', () => {
 
   it('no guarda las respuestas como si fueran comandos', async () => {
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     await runShell(sessionId, 'Ada Lovelace', IP)
     await runShell(sessionId, 'ada@example.com', IP)
 
@@ -572,7 +660,7 @@ describe('bitácora de la terminal', () => {
     const discord = fakeDiscord()
     const { sessionId } = greet(undefined, 'https://us.posthog.com/replay/abc?t=42')
     await runShell(sessionId, 'cat README.md', IP, 'https://us.posthog.com/replay/abc?t=42')
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     await fill(sessionId)
     vi.setSystemTime(Date.now() + 5 * 60_000)
     await runShell(sessionId, '', IP)
@@ -583,7 +671,7 @@ describe('bitácora de la terminal', () => {
   it('no corta la bitácora sin límite', async () => {
     const { sessionId } = greet()
     for (let i = 0; i < 200; i++) await runShell(sessionId, `ls ${i}`, IP)
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     expect(listPendingSessions()[0].log.length).toBeLessThanOrEqual(120)
   })
 })
@@ -592,7 +680,7 @@ describe('uso de Tab', () => {
   it('queda anotado en la bitácora', async () => {
     const { sessionId } = greet()
     completeInput(sessionId, 'cat READ')
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
 
     const textos = listPendingSessions()[0].log.map((t) => t.text)
     expect(textos).toContain('⇥ cat READ → cat README.md')
@@ -601,7 +689,7 @@ describe('uso de Tab', () => {
   it('anota también cuando había varias opciones', async () => {
     const { sessionId } = greet()
     completeInput(sessionId, 'c') // cat y clear
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
 
     const [anotado] = listPendingSessions()[0].log.filter((t) =>
       t.text.startsWith('⇥'),
@@ -613,7 +701,7 @@ describe('uso de Tab', () => {
   it('no anota nada si Tab no encontró qué completar', async () => {
     const { sessionId } = greet()
     completeInput(sessionId, 'zzzz')
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
 
     const tabs = listPendingSessions()[0].log.filter((t) =>
       t.text.startsWith('⇥'),
@@ -625,7 +713,7 @@ describe('uso de Tab', () => {
     const discord = fakeDiscord()
     const { sessionId } = greet()
     completeInput(sessionId, 'cat equ')
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     await fill(sessionId)
     vi.setSystemTime(Date.now() + 5 * 60_000)
     await runShell(sessionId, '', IP)
@@ -641,7 +729,7 @@ describe('uso de Tab', () => {
 describe('copiar y pegar', () => {
   it('anota en qué pregunta estaba cuando pegó', async () => {
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
     await runShell(sessionId, 'Ada Lovelace', IP)
     await runShell(sessionId, 'ada@example.com', IP)
     await runShell(sessionId, 'ada', IP)
@@ -664,7 +752,7 @@ describe('copiar y pegar', () => {
     await runShell(sessionId, 'cat README.md', IP, '', [
       'copió 3200 caracteres de la pantalla',
     ])
-    await runShell(sessionId, './postular', IP)
+    await start(sessionId, './postular', IP)
 
     const textos = listPendingSessions()[0].log.map((t) => t.text)
     expect(textos.some((t) => t.includes('copió 3200 caracteres'))).toBe(true)
@@ -672,7 +760,7 @@ describe('copiar y pegar', () => {
 
   it('no deja que el navegador nos llene la bitácora', async () => {
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP, '', [
+    await start(sessionId, './postular', IP, '', [
       'a'.repeat(500), // una nota enorme
     ])
 
@@ -686,7 +774,7 @@ describe('copiar y pegar', () => {
   it('viaja con la postulación', async () => {
     const discord = fakeDiscord()
     const { sessionId } = greet()
-    await runShell(sessionId, './postular', IP, '', ['pegó 900 caracteres'])
+    await start(sessionId, './postular', IP, '', ['pegó 900 caracteres'])
     await fill(sessionId)
     vi.setSystemTime(Date.now() + 5 * 60_000)
     await runShell(sessionId, '', IP)

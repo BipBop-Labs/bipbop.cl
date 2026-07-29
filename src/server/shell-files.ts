@@ -11,6 +11,22 @@ export const HELP = `comandos
   clear             limpia la pantalla
   help              esto`
 
+/**
+ * Lo que sale al hacer "cat postular". No es un binario de verdad, pero se
+ * lee como uno: cabecera ELF, basura y las strings que igual quedan legibles.
+ * Adentro va un guiño para quien se ponga a mirar de cerca.
+ */
+export const POSTULAR_BINARY = `^?ELF^B^A^A^@^@^@^@^@^@^@^@^@^C^@>^@^A^@^@^@Ð^[^@^@^@^@^@^@@^@^@^@^@^@^@^@¨^Q^@^@
+^@^@^@^@@^@8^@^M^@@^@^_^@^^^@^F^@^@^@^D^@^@^@@^@^@^@^@^@^@^@@^@^@^@^@^@^@^@^C^@^@^@
+/lib64/ld-linux-x86-64.so.2^@^D^@^@^@^T^@^@^@^C^@^@^@GNU^@·Ø¦^K^Që<^Yá^Aó»^N^@^@
+libc.so.6^@fgets^@stdin^@__isoc99_sscanf^@curl_easy_perform^@__stack_chk_fail^@
+^@^@^@^@óo^Z^úH^Cì^HH^K^E Ù/^@^@H^E À t^BÿÐH^Cÿ^HÃ^É^Y{ÿÿÿ^@^@^@^@^@^@
+postular: no me leas, córreme^@%s^@cv.pdf^@application/pdf^@POST /api/applications^@
+^@^@^@^@nombre^@correo^@github^@linkedin^@cv^@respuestas[5]^@^@^@^@^@^@^@^@^@^@
+Ø^^^@^@^@^@^@^@^@^A^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@ÿÿÿÿ^@^@^@^@
+GCC: (GNU) 14.2.1^@.shstrtab^@.interp^@.note.gnu.build-id^@.text^@.rodata^@.bss^@
+^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@`
+
 export const README = `BipBop Labs, Software Engineer
 ==============================
 

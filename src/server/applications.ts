@@ -188,6 +188,24 @@ export function getCv(
  * el canal se note entre la conversación, y las respuestas van citadas para
  * que se distinga lo que escribió la persona de lo que ponemos nosotros.
  */
+/**
+ * El binario parte sin permisos, así que todos pasan por el chmod. Lo que
+ * dice algo es cuándo cayeron: si lo dieron antes de intentar correrlo, o
+ * después de rebotar con el permiso denegado, y cuántas veces rebotaron.
+ */
+function chmodMark(activity: Array<Trace>): Array<string> {
+  const chmod = activity.findIndex((t) => t.text.startsWith('le dio permisos'))
+  if (chmod === -1) return []
+
+  const rebotes = activity
+    .slice(0, chmod)
+    .filter((t) => t.text === 'intentó correrlo sin permisos').length
+
+  if (!rebotes) return ['🔓 chmod antes de intentar correrlo']
+  const veces = rebotes === 1 ? 'permiso denegado' : 'permisos denegados'
+  return [`🔓 chmod después de ${rebotes} ${veces}`]
+}
+
 function discordMessage(app: Application): string {
   const cuando = new Date(app.createdAt).toLocaleString('es-CL', {
     timeZone: 'America/Santiago',
@@ -198,6 +216,7 @@ function discordMessage(app: Application): string {
   const marcas = [
     app.source === 'api' ? '🤖 por API, con agente' : '⌨️ por la terminal',
     ...(app.flag ? ['🔑 encontró la flag'] : []),
+    ...chmodMark(app.activity),
     cuando,
   ]
 

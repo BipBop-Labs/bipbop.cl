@@ -23,6 +23,7 @@ import {
   FILES,
   HELP,
   FLAG_VALUE,
+  POSTULAR_BINARY,
   POSTULAR_HELP,
 } from './shell-files'
 import { getDb } from './db'
@@ -65,6 +66,8 @@ type Session = {
   step: number | null
   draft: ApplicationFields
   cv: { bytes: Uint8Array; name: string } | null
+  /** Si ya le dio permisos de ejecución al binario con chmod. */
+  exec: boolean
   flag: boolean
   sending: boolean
   done: boolean
@@ -129,6 +132,7 @@ function saveSession(session: Session) {
       JSON.stringify({
         step: session.step,
         draft: session.draft,
+        exec: session.exec,
         flag: session.flag,
         done: session.done,
         replay: session.replay,
@@ -153,12 +157,13 @@ function getSession(id?: string): { session: Session; expired: boolean } {
       Session,
       'step' | 'draft' | 'flag' | 'done'
     > &
-      Partial<Pick<Session, 'replay' | 'log'>>
+      Partial<Pick<Session, 'replay' | 'log' | 'exec'>>
     const session: Session = {
       id: row.id,
       createdAt: row.created_at,
       replay: '',
       log: [],
+      exec: false,
       ...state,
       cv: row.cv ? { bytes: row.cv, name: row.cv_name ?? 'cv.pdf' } : null,
       sending: sending.has(row.id),
@@ -176,6 +181,7 @@ function getSession(id?: string): { session: Session; expired: boolean } {
     step: null,
     draft: { ...EMPTY_FIELDS },
     cv: null,
+    exec: false,
     flag: false,
     sending: false,
     done: false,
@@ -524,6 +530,38 @@ function startApply(session: Session, flag: boolean): Array<Line> {
   ]
 }
 
+/** Glob de shell, con lo justo: "*" y "?". "." es el directorio entero. */
+function matchesGlob(pattern: string, name: string): boolean {
+  if (pattern === '.') return true
+  const regex = new RegExp(
+    `^${pattern
+      .split('')
+      .map((char) =>
+        char === '*' ? '.*' : char === '?' ? '.' : char.replace(/\W/, '\\$&'),
+      )
+      .join('')}$`,
+  )
+  return regex.test(name)
+}
+
+/**
+ * Qué le deja el modo al dueño: true si queda ejecutable, false si no, null
+ * si el modo no se entiende. El dueño es el único que importa acá.
+ */
+function execBit(mode: string): boolean | null {
+  const octal = /^0?([0-7])[0-7][0-7]$/.exec(mode)
+  if (octal) return (Number(octal[1]) & 1) === 1
+
+  const symbolic = /^([ugoa]*)([+\-=])([rwxXst]*)$/.exec(mode)
+  if (!symbolic) return null
+  const [, who, op, perms] = symbolic
+  const mine = who === '' || who.includes('u') || who.includes('a')
+  const x = /[xX]/.test(perms)
+  if (op === '=') return mine ? x : null
+  if (!mine || !x) return null
+  return op === '+'
+}
+
 function runCommand(session: Session, input: string): Array<Line> {
   const raw = input.trim()
   const [cmd, ...rest] = raw.split(/\s+/)
@@ -541,15 +579,63 @@ function runCommand(session: Session, input: string): Array<Line> {
       const names = Object.keys(FILES).filter((n) => all || !n.startsWith('.'))
       return [
         { kind: 'out' as const, text: names.join('   ') },
-        { kind: 'file' as const, text: 'postular*' },
+        session.exec
+          ? { kind: 'file' as const, text: 'postular*' }
+          : { kind: 'out' as const, text: 'postular' },
       ]
     }
 
     case 'cat': {
       if (!arg) return err('cat: falta el archivo')
-      const file = FILES[arg] ?? FILES[arg.replace(/^\.\//, '')]
+      const name = arg.replace(/^\.\//, '')
+      if (name === 'postular') {
+        trace(session, 'leyó el binario')
+        return block(POSTULAR_BINARY)
+      }
+      const file = FILES[arg] ?? FILES[name]
       if (!file) return err(`cat: ${arg}: no existe`)
       return block(file)
+    }
+
+    /**
+     * El binario llega sin permisos. Correrlo antes de darle el chmod es el
+     * primer paso de la postulación. Aceptamos lo mismo que un chmod de
+     * verdad: octal (755, 777, 644...) y simbólico (+x, u+x, a+x, -x), y
+     * también el glob, que acá solo puede pegarle a postular.
+     */
+    case 'chmod': {
+      const args = rest.filter((part) => !part.startsWith('-') || part === '-x')
+      const target = args[args.length - 1]?.replace(/^\.\//, '')
+      const mode = args.slice(0, -1).join(' ')
+      if (!target || !mode) return err('chmod: faltan argumentos')
+
+      const glob = target.includes('*') || target === '.'
+      const alBinario = glob
+        ? matchesGlob(target, 'postular')
+        : target === 'postular'
+      if (!alBinario) {
+        if (glob) return err(`chmod: ${target}: no calza con el binario`)
+        if (FILES[target]) return err(`chmod: ${target}: no hace falta`)
+        return err(`chmod: ${target}: no existe`)
+      }
+
+      const exec = execBit(mode)
+      if (exec === null) return err(`chmod: modo incorrecto: '${mode}'`)
+
+      const before = session.exec
+      session.exec = exec
+      trace(
+        session,
+        exec
+          ? before
+            ? 'chmod de nuevo'
+            : `le dio permisos al binario${glob ? ' con glob' : ''}`
+          : `chmod ${mode}: lo dejó sin permisos`,
+      )
+      if (exec) return before ? [] : muted('postular ahora es ejecutable.')
+      return before
+        ? muted('postular ya no es ejecutable.')
+        : muted('postular sigue sin ser ejecutable.')
     }
 
     case 'clear':
@@ -558,6 +644,13 @@ function runCommand(session: Session, input: string): Array<Line> {
     case './postular':
     case 'postular':
     case './postular.sh': {
+      if (!session.exec) {
+        trace(session, 'intentó correrlo sin permisos')
+        return [
+          ...err(`${cmd}: permiso denegado`),
+          ...muted('el archivo no es ejecutable todavía.'),
+        ]
+      }
       if (rest.includes('--help') || rest.includes('-h'))
         return block(POSTULAR_HELP)
 
@@ -809,7 +902,15 @@ export async function runShell(
   return reply([...echo, ...applyInput(session, input)])
 }
 
-const COMMANDS = ['help', 'ls', 'cat', 'clear', './postular', 'agents']
+const COMMANDS = [
+  'help',
+  'ls',
+  'cat',
+  'chmod',
+  'clear',
+  './postular',
+  'agents',
+]
 
 /** El prefijo más largo que comparten todos los candidatos. */
 function commonPrefix(items: Array<string>): string {
@@ -842,10 +943,12 @@ export function completeInput(
   const pool = isFirst
     ? COMMANDS
     : parts[0] === 'cat'
-      ? Object.keys(FILES).filter(
+      ? [...Object.keys(FILES), 'postular'].filter(
           (name) => editing.startsWith('.') || !name.startsWith('.'),
         )
-      : []
+      : parts[0] === 'chmod'
+        ? ['postular']
+        : []
 
   const matches = pool.filter((name) => name.startsWith(editing))
   if (!matches.length) return base
