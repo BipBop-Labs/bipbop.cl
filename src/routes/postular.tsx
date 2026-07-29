@@ -83,6 +83,15 @@ const GUINOS = {
   todo: ['ctrl+a. está todo a la vista.'],
 } as const
 
+/**
+ * Enfocar un campo colapsa la selección del documento, así que si hay texto
+ * seleccionado no le quitamos el foco a nadie: justamente queremos que puedan
+ * copiarse la pantalla.
+ */
+function haySeleccion(): boolean {
+  return Boolean(window.getSelection()?.toString())
+}
+
 const LINE_COLOR: Record<Line['kind'], string> = {
   in: 'text-ink',
   out: 'text-ink-2',
@@ -250,7 +259,7 @@ function Postular() {
   // La terminal siempre muestra lo último.
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight })
-    if (!busy && mode !== 'done') inputEl.current?.focus()
+    if (!busy && mode !== 'done' && !haySeleccion()) inputEl.current?.focus()
   }, [lines, busy, mode])
 
   // Avisa si se va con la postulación a medias.
@@ -387,7 +396,10 @@ function Postular() {
         className={`flex h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-[4px] border bg-surface transition-colors max-[720px]:h-[calc(100dvh-2rem)] ${
           dragging ? 'border-success' : 'border-line'
         }`}
-        onClick={() => inputEl.current?.focus()}
+        onClick={() => {
+          // El click que cierra un arrastre no debe borrar la selección.
+          if (!haySeleccion()) inputEl.current?.focus()
+        }}
       >
         <header className="flex items-center gap-2 border-b border-line px-4 py-2 text-[0.72rem] tracking-[0.1em] text-ink-3 uppercase">
           <span aria-hidden="true" className="h-2 w-2 rounded-full bg-success" />
