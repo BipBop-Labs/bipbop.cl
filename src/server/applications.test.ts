@@ -281,6 +281,14 @@ describe('POST /api/admin', () => {
     expect((await call({ action: 'list', key: 'otra' })).status).toBe(401)
   })
 
+  it('ignora los espacios que arrastra una llave pegada', async () => {
+    process.env.ADMIN_KEY = 'una-llave-suficientemente-larga\n'
+    expect(
+      (await call({ action: 'list', key: ' una-llave-suficientemente-larga ' }))
+        .status,
+    ).not.toBe(401)
+  })
+
   it('lista las postulaciones y entrega el CV', async () => {
     process.env.ADMIN_KEY = 'una-llave-suficientemente-larga'
     discordOk()

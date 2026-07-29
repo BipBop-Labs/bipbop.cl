@@ -12,11 +12,14 @@ import { listPendingSessions } from '#/server/shell'
  */
 
 function keyMatches(given: string): boolean {
-  const expected = process.env.ADMIN_KEY
+  // Con trim a los dos lados: `openssl rand -base64 32` termina en salto de
+  // línea, y ese salto invisible viaja tanto al pegar la llave en el panel
+  // como al configurarla en el servidor. Sin esto la llave correcta da 401.
+  const expected = process.env.ADMIN_KEY?.trim()
   // Sin llave configurada el panel queda cerrado, no abierto.
   if (!expected || expected.length < 16) return false
 
-  const a = Buffer.from(given)
+  const a = Buffer.from(given.trim())
   const b = Buffer.from(expected)
   if (a.length !== b.length) return false
   return timingSafeEqual(a, b)

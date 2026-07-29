@@ -147,7 +147,7 @@ function Admin() {
         const res = await call({ action: 'list' }, adminKey)
         if (res.status === 401) {
           setError('Llave incorrecta.')
-          sessionStorage.removeItem('adminKey')
+          localStorage.removeItem('adminKey')
           setApps(null)
           return
         }
@@ -157,8 +157,10 @@ function Admin() {
         }
         setApps(data.applications)
         setPending(data.pending ?? [])
-        sessionStorage.setItem('adminKey', adminKey)
-        setKey(adminKey)
+        // En localStorage y no en sessionStorage: la llave sobrevive al cierre
+        // de la pestaña, así se entra una sola vez.
+        localStorage.setItem('adminKey', adminKey.trim())
+        setKey(adminKey.trim())
       } catch {
         setError('No pudimos conectar.')
       } finally {
@@ -169,7 +171,8 @@ function Admin() {
   )
 
   useEffect(() => {
-    const saved = sessionStorage.getItem('adminKey')
+    const saved =
+      localStorage.getItem('adminKey') ?? sessionStorage.getItem('adminKey')
     if (saved) void load(saved)
   }, [load])
 
