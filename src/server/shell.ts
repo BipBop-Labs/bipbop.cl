@@ -114,6 +114,15 @@ function sweep() {
   ).run(MAX_SESSIONS)
 }
 
+/**
+ * Una sesión guardada puede venir de una versión del flujo con menos preguntas:
+ * al agregar una, los borradores en curso no tienen ese campo. Sin los vacíos
+ * de EMPTY_FIELDS cualquier lectura del borrador revienta con undefined.
+ */
+function restoreDraft(draft: Partial<ApplicationFields> | undefined) {
+  return { ...EMPTY_FIELDS, ...draft }
+}
+
 function saveSession(session: Session) {
   getDb()
     .prepare(
@@ -165,6 +174,7 @@ function getSession(id?: string): { session: Session; expired: boolean } {
       log: [],
       exec: false,
       ...state,
+      draft: restoreDraft(state.draft),
       cv: row.cv ? { bytes: row.cv, name: row.cv_name ?? 'cv.pdf' } : null,
       sending: sending.has(row.id),
     }
@@ -234,13 +244,13 @@ export function listPendingSessions(): Array<Pending> {
   }>
 
   return rows
-    .map((row) => ({
-      row,
-      state: JSON.parse(row.state) as Session & {
+    .map((row) => {
+      const state = JSON.parse(row.state) as Session & {
         replay?: string
         log?: Array<Trace>
-      },
-    }))
+      }
+      return { row, state: { ...state, draft: restoreDraft(state.draft) } }
+    })
     .filter(({ state }) => state.step !== null && !state.done)
     .map(({ row, state }) => ({
       id: row.id,

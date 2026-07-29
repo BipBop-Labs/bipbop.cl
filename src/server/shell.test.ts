@@ -443,6 +443,30 @@ describe('rescate desde /admin', () => {
     expect(p.hasCv).toBe(false)
   })
 
+  it('aguanta una sesión guardada antes de que existiera una pregunta', async () => {
+    const { sessionId } = greet()
+    await start(sessionId, './postular', IP)
+    await runShell(sessionId, 'Ada Lovelace', IP)
+
+    // Así quedó en el disco lo que se empezó con el cuestionario viejo: sin
+    // los campos que agregamos después.
+    const row = getDb()
+      .prepare('SELECT state FROM sessions WHERE id = ?')
+      .get(sessionId) as { state: string }
+    const state = JSON.parse(row.state)
+    delete state.draft.answerCase
+    delete state.draft.answerAsk
+    getDb()
+      .prepare('UPDATE sessions SET state = ? WHERE id = ?')
+      .run(JSON.stringify(state), sessionId)
+
+    const [p] = listPendingSessions()
+    expect(p.fullName).toBe('Ada Lovelace')
+    expect(p.draft.answerCase).toBe('')
+    // Y se puede seguir escribiendo donde quedó, sin reventar.
+    expect(await runShell(sessionId, 'ada@example.com', IP)).toBeTruthy()
+  })
+
   it('no muestra las que ni siquiera empezaron', () => {
     greet() // solo abrió la página
     expect(listPendingSessions()).toEqual([])

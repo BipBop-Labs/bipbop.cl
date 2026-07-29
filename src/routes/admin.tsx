@@ -151,6 +151,11 @@ function Admin() {
           setApps(null)
           return
         }
+        if (!res.ok) {
+          // Sin esto un 500 dejaba el formulario ahí, sin decir nada.
+          setError(`El servidor respondió ${res.status}.`)
+          return
+        }
         const data = (await res.json()) as {
           applications: Array<Application>
           pending: Array<Pending>
