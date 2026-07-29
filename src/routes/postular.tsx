@@ -64,22 +64,23 @@ type Reply = {
 }
 
 /**
- * Guiños para cuando alguien se lleva el texto a un modelo o pega una
- * respuesta armada afuera. No es trampa, y no queremos que lo parezca: el
- * mensaje es la forma de decirles que lo vemos y que está bien.
+ * Cuando alguien se lleva el texto a un modelo o pega una respuesta armada
+ * afuera. No es un reto: usar IA es parte del trabajo y la tercera pregunta
+ * va de eso. Lo que sí conviene recordarles es lo que está en juego, porque
+ * esas respuestas son lo único que vamos a conocer de ellos.
  */
 const GUINOS = {
   copiar: [
-    'te lo llevas a un modelo, ¿cierto? dale, para eso está ahí.',
-    'copiado. si le preguntas a una IA, la tercera pregunta va justo de eso.',
-    'llévatelo tranquilo. después cuéntanos qué te respondió y qué descartaste.',
+    'puedes usar IA. nosotros la usamos todos los días.',
+    'cópialo tranquilo. lo que nos interesa es cómo la usas.',
+    'adelante. tu respuesta la va a leer una persona, no un filtro.',
   ],
   pegar: [
-    'eso venía de otra parte. no hay drama, solo asegúrate de poder defenderlo.',
-    'pegado de una. lo que nos interesa no es de dónde salió, es qué revisaste.',
-    'buena. ahora léelo de nuevo y bórrale lo que no sea tuyo.',
+    'usar IA está bien. esta respuesta es lo que vamos a conocer de ti.',
+    'sin problema, acá la IA es parte del trabajo.',
+    'queremos entenderte a ti, no al modelo.',
   ],
-  todo: ['ctrl+a, el clásico. está todo tuyo.'],
+  todo: ['ctrl+a. está todo a la vista.'],
 } as const
 
 const LINE_COLOR: Record<Line['kind'], string> = {

@@ -26,6 +26,8 @@ type Application = {
   answerProject: string
   answerSimplicity: string
   answerAi: string
+  answerCase: string
+  answerAsk: string
   cvName: string
   cvSize: number
   replayUrl: string
@@ -53,6 +55,8 @@ type Pending = {
     answerProject: string
     answerSimplicity: string
     answerAi: string
+    answerCase: string
+    answerAsk: string
   }
 }
 
@@ -60,6 +64,8 @@ const QUESTIONS: Array<[keyof Application, string]> = [
   ['answerProject', 'Lo que construiste'],
   ['answerSimplicity', 'Ownership y simplificación'],
   ['answerAi', 'Trabajo con IA'],
+  ['answerCase', 'El caso'],
+  ['answerAsk', 'Lo que nos preguntaría'],
 ]
 
 /** Lo que hizo en la terminal antes de postular. */

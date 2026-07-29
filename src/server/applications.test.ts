@@ -31,6 +31,8 @@ const fields = {
   answerProject: 'Construí el motor.',
   answerSimplicity: 'Descarté los engranajes extra.',
   answerAi: 'Uso IA y verifico cada resultado.',
+  answerCase: 'Primero miro los logs, después recorto a una cosa.',
+  answerAsk: '¿Qué parte del producto les da más miedo tocar?',
 }
 
 /**

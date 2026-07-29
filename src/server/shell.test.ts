@@ -104,7 +104,9 @@ async function fill(sessionId: string) {
     })
     await runShell(sessionId, 'https://ada.dev/engine construí el motor.', IP)
     await runShell(sessionId, 'Descarté los engranajes extra.', IP)
-  return runShell(sessionId, 'Uso IA y verifico todo.', IP)
+  await runShell(sessionId, 'Uso IA y verifico todo.', IP)
+  await runShell(sessionId, 'Miraría los logos dos días y recortaría.', IP)
+  return runShell(sessionId, '¿Qué se rompe más seguido?', IP)
 }
 
 describe('postulación', () => {
@@ -349,7 +351,7 @@ describe('rescate desde /admin', () => {
     expect(p.fullName).toBe('Ada Lovelace')
     expect(p.email).toBe('ada@example.com')
     expect(p.step).toBe(3)
-    expect(p.steps).toBe(8)
+    expect(p.steps).toBe(10)
     expect(p.hasCv).toBe(false)
   })
 
@@ -392,6 +394,8 @@ describe('sesiones de una versión anterior del cuestionario', () => {
     answerProject: 'Construí RepuLink.',
     answerSimplicity: 'Simplifiqué el pedido.',
     answerAi: '', // nunca alcanzó a responderla
+    answerCase: '',
+    answerAsk: '',
   }
 
   it('vuelve a preguntar lo que quedó sin responder', async () => {
@@ -412,8 +416,10 @@ describe('sesiones de una versión anterior del cuestionario', () => {
     expect(text(intento)).toContain('trabajo con IA')
     expect(fetchMock).not.toHaveBeenCalled()
 
-    // Respondiendo la que faltaba, ahora sí sale.
+    // Respondiendo las que faltaban, ahora sí sale.
     await runShell(id, 'Uso IA a diario y verifico todo.', IP)
+    await runShell(id, 'Miro los logs y recorto a una cosa.', IP)
+    await runShell(id, '¿Qué les cuesta más mantener?', IP)
     const enviada = await runShell(id, '', IP)
     expect(enviada.mode).toBe('done')
     expect(fetchMock).toHaveBeenCalled()

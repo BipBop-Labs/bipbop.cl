@@ -19,6 +19,8 @@ export type ApplicationFields = {
   answerProject: string
   answerSimplicity: string
   answerAi: string
+  answerCase: string
+  answerAsk: string
 }
 
 export type FieldName = keyof ApplicationFields | 'cv'
@@ -34,6 +36,8 @@ export const FIELD_ORDER: Array<FieldName> = [
   'answerProject',
   'answerSimplicity',
   'answerAi',
+  'answerCase',
+  'answerAsk',
 ]
 
 export type Errors = Partial<Record<FieldName, string>>
@@ -47,6 +51,8 @@ export const EMPTY_FIELDS: ApplicationFields = {
   answerProject: '',
   answerSimplicity: '',
   answerAi: '',
+  answerCase: '',
+  answerAsk: '',
 }
 
 /** Los perfiles se piden por handle: el dominio va impreso en el formulario. */
@@ -176,6 +182,10 @@ export function validate(fields: ApplicationFields, cv: CvMeta): Errors {
   if (a2) errors.answerSimplicity = a2
   const a3 = requireAnswer(fields.answerAi, 'sobre tu trabajo con IA')
   if (a3) errors.answerAi = a3
+  const a4 = requireAnswer(fields.answerCase, 'el caso que te planteamos')
+  if (a4) errors.answerCase = a4
+  const a5 = requireAnswer(fields.answerAsk, 'qué nos preguntarías')
+  if (a5) errors.answerAsk = a5
 
   return errors
 }
@@ -191,6 +201,8 @@ export function normalizeFields(fields: ApplicationFields): ApplicationFields {
     answerProject: fields.answerProject.trim(),
     answerSimplicity: fields.answerSimplicity.trim(),
     answerAi: fields.answerAi.trim(),
+    answerCase: fields.answerCase.trim(),
+    answerAsk: fields.answerAsk.trim(),
   }
 }
 

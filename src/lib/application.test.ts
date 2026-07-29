@@ -27,6 +27,8 @@ const validFields = {
   answerProject: 'Construí el motor.',
   answerSimplicity: 'Descarté la versión con engranajes extra.',
   answerAi: 'Uso IA para revisar mis notas y verifico cada cálculo.',
+  answerCase: 'Miro los registros dos días y después recorto.',
+  answerAsk: '¿Qué parte les cuesta más mantener?',
 }
 
 describe('normalizeUrl', () => {
@@ -89,6 +91,8 @@ describe('validate', () => {
       'answerProject',
       'answerSimplicity',
       'answerAi',
+      'answerCase',
+      'answerAsk',
     ]) {
       expect(errors).toHaveProperty(field)
     }

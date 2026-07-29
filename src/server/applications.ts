@@ -123,6 +123,8 @@ type Row = {
   answer_project: string
   answer_simplicity: string
   answer_ai: string
+  answer_case: string
+  answer_ask: string
   cv_name: string
   cv_size: number
   replay_url: string | null
@@ -146,6 +148,8 @@ function toApplication(row: Row): Application {
     answerProject: row.answer_project,
     answerSimplicity: row.answer_simplicity,
     answerAi: row.answer_ai,
+    answerCase: row.answer_case,
+    answerAsk: row.answer_ask,
     cvName: row.cv_name,
     cvSize: row.cv_size,
     replayUrl: row.replay_url ?? '',
@@ -158,8 +162,9 @@ function toApplication(row: Row): Application {
 }
 
 const COLUMNS = `id, created_at, status, source, flag, full_name, email, github,
-  linkedin, project, answer_project, answer_simplicity, answer_ai, cv_name,
-  cv_size, replay_url, activity, delivered_at, delivery_error`
+  linkedin, project, answer_project, answer_simplicity, answer_ai, answer_case,
+  answer_ask, cv_name, cv_size, replay_url, activity, delivered_at,
+  delivery_error`
 
 export function listApplications(): Array<Application> {
   return (
@@ -233,6 +238,12 @@ function discordMessage(app: Application): string {
     '',
     '### Trabajo con IA',
     citar(app.answerAi),
+    '',
+    '### El caso',
+    citar(app.answerCase),
+    '',
+    '### Lo que nos preguntaría',
+    citar(app.answerAsk),
     '',
     `-# ${app.status} · ${app.id}`,
   ].join('\n')
@@ -375,8 +386,8 @@ export async function submitApplication(
       `INSERT INTO applications (
          id, created_at, status, source, flag, full_name, email, github,
          linkedin, project, answer_project, answer_simplicity, answer_ai,
-         cv, cv_name, cv_size, replay_url, activity
-       ) VALUES (?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         answer_case, answer_ask, cv, cv_name, cv_size, replay_url, activity
+       ) VALUES (?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
@@ -391,6 +402,8 @@ export async function submitApplication(
       fields.answerProject,
       fields.answerSimplicity,
       fields.answerAi,
+      fields.answerCase,
+      fields.answerAsk,
       cv.bytes,
       cv.name,
       cv.bytes.byteLength,

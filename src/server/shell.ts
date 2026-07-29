@@ -207,6 +207,8 @@ export type Pending = {
     answerProject: string
     answerSimplicity: string
     answerAi: string
+    answerCase: string
+    answerAsk: string
   }
 }
 
@@ -246,7 +248,9 @@ export function listPendingSessions(): Array<Pending> {
       written:
         state.draft.answerProject.length +
         state.draft.answerSimplicity.length +
-        state.draft.answerAi.length,
+        state.draft.answerAi.length +
+        state.draft.answerCase.length +
+        state.draft.answerAsk.length,
       replay: state.replay ?? '',
       log: state.log ?? [],
       draft: {
@@ -256,6 +260,8 @@ export function listPendingSessions(): Array<Pending> {
         answerProject: state.draft.answerProject,
         answerSimplicity: state.draft.answerSimplicity,
         answerAi: state.draft.answerAi,
+        answerCase: state.draft.answerCase,
+        answerAsk: state.draft.answerAsk,
       },
     }))
 }
@@ -272,31 +278,33 @@ type Step = {
   prompt: string
   kind: 'line' | 'text' | 'file' | 'project'
   prefix?: string
+  /** Tope propio, cuando la pregunta no necesita 1.200 caracteres. */
+  max?: number
 }
 
 const STEPS: Array<Step> = [
   {
     name: 'fullName',
-    ask: ['1/8  ¿Cómo te llamas?'],
+    ask: ['1/10 ¿Cómo te llamas?'],
     prompt: '>',
     kind: 'line',
   },
   {
     name: 'email',
-    ask: ['2/8  ¿A qué correo te escribimos?'],
+    ask: ['2/10 ¿A qué correo te escribimos?'],
     prompt: '>',
     kind: 'line',
   },
   {
     name: 'github',
-    ask: ['3/8  Tu GitHub. Solo el usuario.'],
+    ask: ['3/10 Tu GitHub. Solo el usuario.'],
     prompt: GITHUB_PREFIX,
     kind: 'line',
     prefix: GITHUB_PREFIX,
   },
   {
     name: 'linkedin',
-    ask: ['4/8  Tu LinkedIn. Solo el perfil.'],
+    ask: ['4/10 Tu LinkedIn. Solo el perfil.'],
     prompt: LINKEDIN_PREFIX,
     kind: 'line',
     prefix: LINKEDIN_PREFIX,
@@ -304,7 +312,7 @@ const STEPS: Array<Step> = [
   {
     name: 'cv',
     ask: [
-      '5/8  Tu CV en PDF, máximo 10 MB.',
+      '5/10 Tu CV en PDF, máximo 10 MB.',
       '     Presiona Enter para elegir el archivo.',
       '     Si estás en computador, también puedes arrastrarlo aquí.',
     ],
@@ -314,7 +322,7 @@ const STEPS: Array<Step> = [
   {
     name: 'answerProject',
     ask: [
-      '6/8  Algo que hayas construido',
+      '6/10 Algo que hayas construido',
       '',
       '     Pega el enlace (repositorio, demo o producto) y cuéntanos:',
       '     ¿qué problema resolvía, qué hiciste tú personalmente, qué',
@@ -326,7 +334,7 @@ const STEPS: Array<Step> = [
   {
     name: 'answerSimplicity',
     ask: [
-      '7/8  Ownership y simplificación',
+      '7/10 Ownership y simplificación',
       '',
       '     Cuéntanos sobre una ocasión reciente en que tuviste que hacerte',
       '     cargo de un problema importante pero poco definido. ¿Cómo',
@@ -339,7 +347,7 @@ const STEPS: Array<Step> = [
   {
     name: 'answerAi',
     ask: [
-      '8/8  Trabajo con IA',
+      '8/10 Trabajo con IA',
       '',
       '     Cuéntanos un caso concreto en el que incorporaste IA durante un',
       '     desarrollo. ¿En qué partes del proceso la usaste, qué decisiones',
@@ -348,6 +356,32 @@ const STEPS: Array<Step> = [
     ],
     prompt: '>',
     kind: 'text',
+  },
+  {
+    name: 'answerCase',
+    ask: [
+      '9/10 El caso',
+      '',
+      '     Un arquitecto revisor te dice: "el asistente responde bien,',
+      '     pero igual reviso todo a mano". Tienes los logs y una semana.',
+      '',
+      '     ¿Qué haces los primeros dos días, qué llevas a producción esa',
+      '     semana, y qué dejas fuera a propósito?',
+    ],
+    prompt: '>',
+    kind: 'text',
+  },
+  {
+    name: 'answerAsk',
+    ask: [
+      '10/10 Lo último',
+      '',
+      '     ¿Qué nos preguntarías tú a nosotros?',
+      '     Puede ser corto.',
+    ],
+    prompt: '>',
+    kind: 'text',
+    max: 400,
   },
 ]
 
@@ -415,7 +449,7 @@ function state(session: Session, lines: Array<Line>): ShellReply {
     mode: step.kind === 'file' ? 'attach' : 'field',
     max:
       step.kind === 'text' || step.kind === 'project'
-        ? MAX_ANSWER_LENGTH
+        ? (step.max ?? MAX_ANSWER_LENGTH)
         : undefined,
   }
 }
@@ -445,7 +479,15 @@ function summary(session: Session): Array<Line> {
       `  linkedin   ${d.linkedin}`,
       `  proyecto   ${d.project}`,
       `  cv         ${session.cv?.name ?? ''} (${Math.ceil((session.cv?.bytes.byteLength ?? 0) / 1024)} KB)`,
-      `  respuestas ${d.answerProject.length} + ${d.answerSimplicity.length} + ${d.answerAi.length} caracteres`,
+      `  respuestas ${[
+        d.answerProject,
+        d.answerSimplicity,
+        d.answerAi,
+        d.answerCase,
+        d.answerAsk,
+      ]
+        .map((r) => r.length)
+        .join(' + ')} caracteres`,
       ...(session.flag ? ['  flag       ok'] : []),
       '',
     ),

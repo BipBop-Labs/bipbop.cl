@@ -74,6 +74,19 @@ const CONTRACT = {
       question:
         'Cuéntanos un caso concreto en el que incorporaste IA durante un desarrollo. ¿En qué partes del proceso la usaste, qué decisiones tomaste tú, qué sugerencia rechazaste y cómo verificaste el resultado?',
     },
+    answerCase: {
+      type: 'string',
+      required: true,
+      max: MAX_ANSWER_LENGTH,
+      question:
+        'Un arquitecto revisor te dice: "el asistente responde bien, pero igual reviso todo a mano". Tienes los logs y una semana. ¿Qué haces los primeros dos días, qué llevas a producción esa semana, y qué dejas fuera a propósito?',
+    },
+    answerAsk: {
+      type: 'string',
+      required: true,
+      max: 400,
+      question: '¿Qué nos preguntarías tú a nosotros?',
+    },
     flag: {
       type: 'string',
       required: false,

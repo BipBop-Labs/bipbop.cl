@@ -69,6 +69,8 @@ export function getDb(): DatabaseSync {
   for (const [nombre, tipo] of [
     ['replay_url', 'TEXT'],
     ['activity', 'TEXT'],
+    ['answer_case', "TEXT NOT NULL DEFAULT ''"],
+    ['answer_ask', "TEXT NOT NULL DEFAULT ''"],
   ]) {
     if (!columnas.has(nombre)) {
       db.exec(`ALTER TABLE applications ADD COLUMN ${nombre} ${tipo}`)

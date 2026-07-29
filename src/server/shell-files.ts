@@ -86,7 +86,7 @@ Cómo postular
   ./postular --help     qué te vamos a preguntar
 
 Ten a mano tu CV en PDF y el enlace a algo que hayas construido.
-Toma unos 15 minutos. No hay filtro automático, lo leemos nosotros.
+Toma unos 20 minutos. No hay filtro automático, lo leemos nosotros.
 
 Descripción completa:      cat cargo.md
 Con quién vas a trabajar:  cat equipo.txt
@@ -219,11 +219,13 @@ Te vamos a pedir, en orden:
   3. GitHub y LinkedIn (solo tu usuario)
   4. tu CV en PDF, máximo 10 MB
 
-Y tres preguntas, de 1.200 caracteres cada una:
+Y cinco preguntas:
 
   · algo que hayas construido, con el enlace
   · ownership y simplificación
   · trabajo con IA
+  · un caso concreto, para ver cómo decides
+  · qué nos preguntarías tú a nosotros
 
 Se responde una cosa a la vez. Enter envía, Shift+Enter salta línea.
 Se sale con :q, como en vim.
