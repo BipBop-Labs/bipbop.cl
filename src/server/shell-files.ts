@@ -8,6 +8,7 @@ export const HELP = `comandos
 
   ls                lista los archivos de este directorio
   cat <archivo>     muestra un archivo
+  chmod +x <arch>   lo deja ejecutable
   clear             limpia la pantalla
   help              esto`
 
