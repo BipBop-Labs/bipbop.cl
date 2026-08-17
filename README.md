@@ -12,7 +12,9 @@ CSS v4, so the site ships with a server it can grow into.
 - `/styleguide` — browsable brand style guide
 - `/api/health` — server liveness check
 - `/api/applications` — the documented path for agents (`GET` returns the contract)
+- `/agenda` — interview booking board for shortlisted candidates
 - `/api/shell` — backend for the `/postular` terminal
+- `/api/agenda` — backend for `/agenda`
 
 ## Running it
 
@@ -89,6 +91,16 @@ are counted per IP but only when one actually goes out (a rejected format costs
 nothing), and the real limit on applying twice is the per-email check above.
 
 See `src/server/applications.ts` for the screening and validation rules.
+
+## Booking interviews
+
+`/agenda?a=<application id>` is the invitation link, copied from `/admin`. Same
+idea as the terminal —the server decides, the browser only paints— with another
+setting: a departure board with tomorrow's blocks, 45 minutes each with 15 in
+between, 09:00 to 12:00 Chile time. Picking one posts it to Discord and shows
+up in `/admin`, where the slot can also be deleted. Slots are stored as Chilean
+wall-clock time (`src/server/meetings.ts`): the interview is at nine in
+Santiago, and that sentence doesn't move with daylight saving.
 
 Configuration is `DISCORD_WEBHOOK_URL` and `DATA_DIR`; see `.env.example`.
 

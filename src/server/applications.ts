@@ -345,6 +345,23 @@ async function deliver(app: Application, cv: Uint8Array): Promise<void> {
   }
 }
 
+/** Un mensaje suelto al mismo webhook (lo usa la agenda). */
+export async function notifyDiscord(content: string): Promise<void> {
+  const webhook = process.env.DISCORD_WEBHOOK_URL
+  if (!webhook) throw new Error('DISCORD_WEBHOOK_URL no está configurado')
+
+  const body = new FormData()
+  body.append(
+    'payload_json',
+    JSON.stringify({
+      content,
+      allowed_mentions: { parse: [] },
+      flags: SIN_PREVISUALIZACIONES,
+    }),
+  )
+  await send(new URL(webhook), body, 'agenda')
+}
+
 /** Un POST al webhook, respetando el rate limit de Discord. */
 async function send(url: URL, body: FormData, id: string, intento = 1) {
   const res = await fetch(url, { method: 'POST', body })

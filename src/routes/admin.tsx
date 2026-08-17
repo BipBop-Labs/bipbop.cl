@@ -36,6 +36,8 @@ type Application = {
   deliveryError: string | null
 }
 
+type Meeting = { slot: string; label: string; applicationId: string }
+
 type Pending = {
   id: string
   startedAt: string
@@ -121,10 +123,48 @@ function Bitacora({ log, replay }: { log: Array<Trace>; replay: string }) {
   )
 }
 
+/** El enlace de agenda, y la hora que eligió si ya lo usó. */
+function Entrevista({
+  meeting,
+  copied,
+  onCopy,
+  onCancel,
+}: {
+  meeting?: Meeting
+  copied: boolean
+  onCopy: () => void
+  onCancel: () => void
+}) {
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.85rem]">
+      <button
+        onClick={onCopy}
+        className="cursor-pointer border-b border-line text-ink-2 hover:border-success hover:text-success"
+      >
+        {copied ? 'copiado' : 'copiar invitación'}
+      </button>
+      {meeting ? (
+        <>
+          <span className="text-success">📅 {meeting.label}</span>
+          <button
+            onClick={onCancel}
+            className="cursor-pointer border-b border-line text-ink-3 hover:border-danger hover:text-danger"
+          >
+            borrar
+          </button>
+        </>
+      ) : (
+        <span className="text-ink-3">sin entrevista</span>
+      )}
+    </div>
+  )
+}
+
 function Admin() {
   const [key, setKey] = useState('')
   const [apps, setApps] = useState<Array<Application> | null>(null)
   const [pending, setPending] = useState<Array<Pending>>([])
+  const [meetings, setMeetings] = useState<Array<Meeting>>([])
   const [copied, setCopied] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -159,9 +199,11 @@ function Admin() {
         const data = (await res.json()) as {
           applications: Array<Application>
           pending: Array<Pending>
+          meetings: Array<Meeting>
         }
         setApps(data.applications)
         setPending(data.pending ?? [])
+        setMeetings(data.meetings ?? [])
         // En localStorage y no en sessionStorage: la llave sobrevive al cierre
         // de la pestaña, así se entra una sola vez.
         localStorage.setItem('adminKey', adminKey.trim())
@@ -200,6 +242,13 @@ function Admin() {
     a.download = app.cvName || 'cv.pdf'
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  async function unbook(app: Application) {
+    if (!confirm(`¿Borrar la entrevista de ${app.fullName}?`)) return
+    const res = await call({ action: 'unbook', id: app.id }, key)
+    const data = (await res.json()) as { meetings?: Array<Meeting> }
+    if (data.meetings) setMeetings(data.meetings)
   }
 
   async function retry(app: Application) {
@@ -410,6 +459,18 @@ function Admin() {
                 CV ({Math.ceil(app.cvSize / 1024)} KB)
               </button>
             </div>
+
+            <Entrevista
+              meeting={meetings.find((m) => m.applicationId === app.id)}
+              copied={copied === `ag-${app.id}`}
+              onCopy={() => {
+                void navigator.clipboard.writeText(
+                  `${location.origin}/agenda?a=${app.id}`,
+                )
+                setCopied(`ag-${app.id}`)
+              }}
+              onCancel={() => void unbook(app)}
+            />
 
             {QUESTIONS.map(([field, title]) => (
               <div key={field} className="mb-4">

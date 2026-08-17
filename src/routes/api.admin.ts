@@ -4,6 +4,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 
 import { getCv, listApplications, redeliver } from '#/server/applications'
+import { cancel, listMeetings } from '#/server/meetings'
 import { listPendingSessions } from '#/server/shell'
 
 /**
@@ -45,7 +46,14 @@ export const Route = createFileRoute('/api/admin')({
               ok: true,
               applications: listApplications(),
               pending: listPendingSessions(),
+              meetings: listMeetings(),
             })
+
+          case 'unbook': {
+            if (!body.id) return json({ ok: false }, { status: 400 })
+            cancel(body.id)
+            return json({ ok: true, meetings: listMeetings() })
+          }
 
           case 'cv': {
             const cv = body.id ? getCv(body.id) : undefined
