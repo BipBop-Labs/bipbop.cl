@@ -1,4 +1,11 @@
 /** JSON-LD structured data, one graph per page. */
+import {
+  MUNICIPIOS_COUNT,
+  MUNICIPIOS_TEXTO,
+  PROXIMOS_TEXTO,
+} from '#/data/municipios'
+
+const DONDE_SE_USA = `Revi está en producción en ${MUNICIPIOS_COUNT} municipios de Chile: ${MUNICIPIOS_TEXTO}. Además, ${PROXIMOS_TEXTO} están en proceso de implementación. La CChC proyecta llegar a 22 municipios durante 2026 y a 75 en 2027.`
 
 export const homeSchema = {
   '@context': 'https://schema.org',
@@ -79,7 +86,7 @@ export const homeSchema = {
           name: '¿Dónde se usa Revi?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Revi está en producción en 12 municipios de Chile: Independencia, Maipú, Providencia, Puerto Montt, Aysén, Valdivia, Puerto Varas, Vitacura, Viña del Mar, Renca y Rancagua.',
+            text: DONDE_SE_USA,
           },
         },
         {
@@ -164,8 +171,8 @@ export const reviSchema = {
       },
       mainEntityOfPage: 'https://bipbop.cl/revi',
       datePublished: '2026-05-17',
-      dateModified: '2026-06-18',
-      image: 'https://bipbop.cl/brand/projects/revi/banner.png',
+      dateModified: '2026-08-18',
+      image: 'https://bipbop.cl/brand/projects/revi/og-revi.jpg',
     },
     {
       '@type': 'DefinedTermSet',
@@ -230,7 +237,7 @@ export const reviSchema = {
           name: '¿Dónde se usa Revi?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Revi está en producción en 12 municipios de Chile: Independencia, Maipú, Providencia, Puerto Montt, Aysén, Valdivia, Puerto Varas, Vitacura, Viña del Mar, Renca y Rancagua.',
+            text: DONDE_SE_USA,
           },
         },
         {

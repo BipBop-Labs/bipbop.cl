@@ -1,10 +1,16 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 
+import {
+  MUNICIPIOS,
+  MUNICIPIOS_COUNT,
+  MUNICIPIOS_TEXTO,
+  PROXIMOS_TEXTO,
+} from '#/data/municipios'
 import { capture } from '#/lib/analytics'
 import { reviSchema } from '#/data/schema'
 
 const DESCRIPTION =
-  'Revi CChC es el asistente con inteligencia artificial de la Cámara Chilena de la Construcción para permisos de edificación en Chile. Disponible en app.ia-revi.cl. Lee planos y documentos, y guía a solicitantes y revisores municipales (DOM) por la normativa.'
+  'Revi CChC es el asistente con IA de la Cámara Chilena de la Construcción para permisos de edificación en Chile: lee planos y guía a solicitantes y a la DOM.'
 
 export const Route = createFileRoute('/revi')({
   head: () => ({
@@ -32,11 +38,11 @@ export const Route = createFileRoute('/revi')({
       { property: 'og:url', content: 'https://bipbop.cl/revi' },
       {
         property: 'og:image',
-        content: 'https://bipbop.cl/brand/projects/revi/banner.png',
+        content: 'https://bipbop.cl/brand/projects/revi/og-revi.jpg',
       },
-      { property: 'og:image:width', content: '1441' },
-      { property: 'og:image:height', content: '454' },
-      { property: 'og:image:type', content: 'image/png' },
+      { property: 'og:image:width', content: '1200' },
+      { property: 'og:image:height', content: '630' },
+      { property: 'og:image:type', content: 'image/jpeg' },
       {
         property: 'og:image:alt',
         content:
@@ -55,7 +61,7 @@ export const Route = createFileRoute('/revi')({
       },
       {
         name: 'twitter:image',
-        content: 'https://bipbop.cl/brand/projects/revi/banner.png',
+        content: 'https://bipbop.cl/brand/projects/revi/og-revi.jpg',
       },
       { name: 'twitter:image:alt', content: 'Revi CChC, asistente con IA' },
     ],
@@ -80,20 +86,6 @@ const H2 = 'mt-12 mb-4 text-[1.35rem] font-semibold tracking-[-0.01em]'
 const P = 'mb-4 max-w-[62ch]'
 const UL = 'mt-2 mb-6 ml-6 list-disc [&>li]:mb-[0.4rem]'
 
-const MUNICIPIOS = [
-  'Independencia',
-  'Maipú',
-  'Providencia',
-  'Puerto Montt',
-  'Aysén',
-  'Valdivia',
-  'Puerto Varas',
-  'Vitacura',
-  'Viña del Mar',
-  'Renca',
-  'Rancagua',
-]
-
 const FAQ = [
   {
     q: '¿Qué es Revi?',
@@ -110,9 +102,9 @@ const FAQ = [
     q: '¿Dónde se usa Revi?',
     a: (
       <>
-        Revi está en producción en 12 municipios de Chile: Independencia, Maipú,
-        Providencia, Puerto Montt, Aysén, Valdivia, Puerto Varas, Vitacura, Viña
-        del Mar, Renca y Rancagua.
+        Revi está en producción en {MUNICIPIOS_COUNT} municipios de Chile:{' '}
+        {MUNICIPIOS_TEXTO}. Además, {PROXIMOS_TEXTO} están en proceso de
+        implementación.
       </>
     ),
   },
@@ -130,8 +122,8 @@ const FAQ = [
     q: '¿Cómo accedo a Revi?',
     a: (
       <>
-        Revi está disponible en{' '}
-        <AppLink location="faq">app.ia-revi.cl</AppLink>.
+        Revi está disponible en <AppLink location="faq">app.ia-revi.cl</AppLink>
+        .
       </>
     ),
   },
@@ -208,7 +200,7 @@ function Revi() {
       </nav>
 
       <div
-        className="mb-10 aspect-[1441/360] rounded-[6px] border border-line bg-[url('/brand/projects/revi/banner.png')] bg-cover bg-center bg-no-repeat"
+        className="mb-10 aspect-[1441/360] rounded-[6px] border border-line bg-[url('/brand/projects/revi/banner.webp')] bg-cover bg-center bg-no-repeat"
         role="img"
         aria-label="Revi CChC, asistente con IA de la Cámara Chilena de la Construcción para permisos de edificación"
       />
@@ -218,9 +210,9 @@ function Revi() {
       </h1>
 
       <p className="mb-10 max-w-[60ch] text-[1.2rem] leading-[1.55] font-normal text-ink-2">
-        <strong>Revi</strong> (también conocido como <strong>Revi CChC</strong> o{' '}
-        <strong>ia-revi</strong>) es el asistente con inteligencia artificial de
-        la <strong>Cámara Chilena de la Construcción (CChC)</strong> para{' '}
+        <strong>Revi</strong> (también conocido como <strong>Revi CChC</strong>{' '}
+        o <strong>ia-revi</strong>) es el asistente con inteligencia artificial
+        de la <strong>Cámara Chilena de la Construcción (CChC)</strong> para{' '}
         <strong>permisos de edificación en Chile</strong>. Lee planos
         arquitectónicos y documentos, y guía a solicitantes y a revisores
         municipales por la normativa, juntos.
@@ -247,7 +239,7 @@ function Revi() {
         >
           BipBop Labs
         </Link>
-        . Publicado el 17 de mayo de 2026, actualizado el 18 de junio de 2026.
+        . Publicado el 17 de mayo de 2026, actualizado el 18 de agosto de 2026.
       </p>
 
       <h2 className={H2}>¿Para qué sirve Revi?</h2>
@@ -258,6 +250,9 @@ function Revi() {
         <strong>Direcciones de Obras Municipales (DOM)</strong>. Revi acorta ese
         ciclo: lee el expediente, identifica lo que falta o no calza con la
         norma, y propone correcciones antes de que el caso vuelva a revisión.
+        Según la <strong>CChC</strong>, la herramienta ha reducido los tiempos
+        de tramitación en cerca de un <strong>30%</strong> en los municipios
+        donde ya opera.
       </p>
       <p className={P}>
         Revi fue impulsado por la{' '}
@@ -296,12 +291,19 @@ function Revi() {
       </div>
 
       <h2 className={H2}>Dónde se usa Revi</h2>
-      <p className={P}>Revi está en producción en 12 municipios de Chile:</p>
+      <p className={P}>
+        Revi está en producción en {MUNICIPIOS_COUNT} municipios de Chile:
+      </p>
       <ul className={UL}>
-        {MUNICIPIOS.map((m) => (
-          <li key={m}>Municipalidad de {m}</li>
+        {MUNICIPIOS.map(([slug, name]) => (
+          <li key={slug}>Municipalidad de {name}</li>
         ))}
       </ul>
+      <p className={P}>
+        Están en proceso de implementación {PROXIMOS_TEXTO}. La CChC proyecta
+        llegar a <strong>22 municipios durante 2026</strong> y a{' '}
+        <strong>75 en 2027</strong>, año en que la Cámara cumple 75 años.
+      </p>
 
       <h2 className={H2}>Glosario rápido: DOM, LGUC y OGUC</h2>
       <p className={P}>
@@ -318,7 +320,9 @@ function Revi() {
           que regula la planificación urbana y la construcción en Chile.
         </li>
         <li>
-          <strong>OGUC (Ordenanza General de Urbanismo y Construcciones):</strong>{' '}
+          <strong>
+            OGUC (Ordenanza General de Urbanismo y Construcciones):
+          </strong>{' '}
           reglamento que detalla la aplicación de la LGUC, con requisitos
           técnicos y de procedimiento.
         </li>
@@ -408,7 +412,13 @@ function AssistantCard({
 }) {
   return (
     <div className="rounded-[6px] border border-line bg-surface p-5">
-      <img className="mb-3 h-12 w-12" src={src} alt={name} />
+      <img
+        className="mb-3 h-12 w-12"
+        src={src}
+        alt={name}
+        loading="lazy"
+        decoding="async"
+      />
       <h3 className="mb-2 text-[1.05rem] font-semibold">{name}</h3>
       <p className="text-[0.95rem] text-ink-2">{copy}</p>
     </div>

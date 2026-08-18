@@ -1,6 +1,11 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 
 import { Wordmark } from '#/components/wordmark'
+import {
+  MUNICIPIOS,
+  MUNICIPIOS_COUNT,
+  MUNICIPIOS_TEXTO,
+} from '#/data/municipios'
 import { capture } from '#/lib/analytics'
 import { homeSchema } from '#/data/schema'
 import { useLang, useT } from '#/lib/lang'
@@ -50,7 +55,6 @@ export const Route = createFileRoute('/')({
     links: [
       { rel: 'canonical', href: 'https://bipbop.cl' },
       { rel: 'alternate', hrefLang: 'es-CL', href: 'https://bipbop.cl/' },
-      { rel: 'alternate', hrefLang: 'en', href: 'https://bipbop.cl/' },
       { rel: 'alternate', hrefLang: 'x-default', href: 'https://bipbop.cl/' },
     ],
     scripts: [
@@ -63,22 +67,7 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
-const MUNICIPALIDADES = [
-  ['independencia.png', 'Municipalidad de Independencia'],
-  ['maipu.png', 'Municipalidad de Maipú'],
-  ['providencia.png', 'Municipalidad de Providencia'],
-  ['pmontt.png', 'Municipalidad de Puerto Montt'],
-  ['aysen.png', 'Municipalidad de Aysén'],
-  ['valdivia.png', 'Municipalidad de Valdivia'],
-  ['pvaras.png', 'Municipalidad de Puerto Varas'],
-  ['vitacura.png', 'Municipalidad de Vitacura'],
-  ['vina.png', 'Municipalidad de Viña del Mar'],
-  ['renca.png', 'Municipalidad de Renca'],
-  ['rancagua.png', 'Municipalidad de Rancagua'],
-] as const
-
-const CARD =
-  'mb-20 overflow-hidden rounded-[6px] border border-line bg-surface'
+const CARD = 'mb-20 overflow-hidden rounded-[6px] border border-line bg-surface'
 const BANNER_SHADE =
   'absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.05)_0%,var(--color-surface)_100%)]'
 const SECTION_HEAD =
@@ -102,13 +91,17 @@ function Home() {
           <img
             className="pointer-events-none absolute top-0 right-[calc(((100vw-100%)/-2)+0.5rem)] z-[1] block h-auto w-[clamp(220px,22vw,360px)] opacity-45 mix-blend-multiply max-[1100px]:hidden"
             src="/brand/machine.webp"
+            loading="lazy"
+            decoding="async"
             alt=""
             aria-hidden="true"
           />
 
           <section className="mb-20" id="work">
             <div className={`${SECTION_HEAD} !text-success`}>
-              <span>{t('En lo que estamos ahora', "What we're on right now")}</span>
+              <span>
+                {t('En lo que estamos ahora', "What we're on right now")}
+              </span>
             </div>
 
             <ReviCard />
@@ -126,18 +119,6 @@ function Home() {
               desc={t(
                 'Unas cuantas cosas más chicas que estamos armando para el brazo tecnológico de la CChC. Vamos hacia reuniones que tomen sus propias notas, áreas que se mantengan al día sin andar persiguiéndose, y un solo lugar para ver qué pasa en la organización. Todavía temprano, y todavía en camino.',
                 "A few smaller things we're building for the CChC's tech arm. We're working towards meetings that take their own notes, areas that keep up with each other without chasing for updates, and one place to see what's going on across the org. Still early, and still building our way there.",
-              )}
-            />
-
-            <CompactCard
-              srHeading="Colegio Santa María de Lo Cañas: matrícula digital"
-              banner="/brand/projects/csmlc/banner.png"
-              name="Colegio Santa María de Lo Cañas"
-              href="https://csmlc.cl/"
-              sub={t('Matrícula digital', 'Digital enrollment')}
-              desc={t(
-                'Estamos trabajando para mover toda la matrícula del colegio a internet. La idea es que las familias llenen todo desde la casa en vez de hacer fila, y que el colegio deje de ahogarse en formularios de papel. Vamos en camino.',
-                "We're working to move the whole enrollment process online for the school. The idea is families filling things out from home instead of standing in line, and a school that isn't drowning in paper forms. We're getting there.",
               )}
             />
           </section>
@@ -272,7 +253,7 @@ function ReviCard() {
         Revi — asistente con IA para permisos de edificación de la Cámara
         Chilena de la Construcción (CChC)
       </h2>
-      <div className="relative aspect-[1441/360] bg-[url('/brand/projects/revi/banner.png')] bg-cover bg-center">
+      <div className="relative aspect-[1441/360] bg-[url('/brand/projects/revi/banner.webp')] bg-cover bg-center">
         <div className={BANNER_SHADE} />
       </div>
       <div className="px-9 pt-8 pb-9">
@@ -335,22 +316,26 @@ function ReviCard() {
 
         <div className="mt-8 border-t border-line pt-6">
           <div className="mb-5 text-base text-ink-3">
-            {t('En producción en 12 municipios', 'Live in 12 municipalities')}
+            {t(
+              `En producción en ${MUNICIPIOS_COUNT} municipios`,
+              `Live in ${MUNICIPIOS_COUNT} municipalities`,
+            )}
           </div>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] items-center justify-items-center gap-x-5 gap-y-7">
-            {MUNICIPALIDADES.map(([file, alt]) => (
+            {MUNICIPIOS.map(([slug, name]) => (
               <img
-                key={file}
-                src={`/brand/projects/revi/municipalidades/${file}`}
-                alt={alt}
+                key={slug}
+                src={`/brand/projects/revi/municipalidades/${slug}.webp`}
+                loading="lazy"
+                decoding="async"
+                alt={`Municipalidad de ${name}`}
                 className="h-auto max-h-12 w-auto max-w-full object-contain opacity-85 grayscale-[0.2] transition-[opacity,filter] duration-200 hover:opacity-100 hover:grayscale-0"
               />
             ))}
           </div>
           <p className="sr-only">
-            Revi está en producción en los siguientes municipios de Chile:
-            Independencia, Maipú, Providencia, Puerto Montt, Aysén, Valdivia,
-            Puerto Varas, Vitacura, Viña del Mar, Renca y Rancagua.
+            Revi está en producción en los siguientes municipios de Chile:{' '}
+            {MUNICIPIOS_TEXTO}.{' '}
           </p>
         </div>
       </div>
@@ -369,7 +354,13 @@ function Assistant({
 }) {
   return (
     <div className="flex items-center gap-[0.6rem]">
-      <img className="block h-9 w-9" src={src} alt={name} />
+      <img
+        className="block h-9 w-9"
+        src={src}
+        alt={name}
+        loading="lazy"
+        decoding="async"
+      />
       <div>
         <div className="text-[1.05rem] text-ink">{name}</div>
         <div className="text-[0.9rem] text-ink-3">{role}</div>
@@ -510,9 +501,7 @@ function Contact() {
     >
       <p className="text-[clamp(1.3rem,2.6vw,1.8rem)] leading-[1.3] font-normal text-ink">
         {t('¿Tienes un ', 'Got a ')}
-        <em className="text-success not-italic">
-          {t('problema', 'problem')}
-        </em>
+        <em className="text-success not-italic">{t('problema', 'problem')}</em>
         {t(' que resolver?', ' to solve?')}
       </p>
       <a
