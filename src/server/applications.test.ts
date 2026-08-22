@@ -4,17 +4,11 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { EMPTY_FIELDS } from '#/lib/application'
-import { Route } from '#/routes/api.applications'
+import { handleApplication } from '#/routes/api.applications'
 import { Route as Route_admin } from '#/routes/api.admin'
 import { listApplications, redeliver, resetState } from './applications'
 import { closeDb } from './db'
 import { fakeDiscord } from './discord-fake'
-
-const POST = (
-  Route.options.server!.handlers as unknown as {
-    POST: (ctx: { request: Request }) => Promise<Response>
-  }
-).POST
 
 /** PDF mínimo válido: cabecera + marcador de fin. */
 const PDF = new TextEncoder().encode('%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF\n')
@@ -65,7 +59,7 @@ function submit(
       file.name,
     )
   }
-  return POST({
+  return handleApplication({
     request: new Request('http://localhost/api/applications', {
       method: 'POST',
       body,
