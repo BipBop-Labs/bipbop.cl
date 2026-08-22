@@ -328,9 +328,9 @@ function Admin() {
             A medio terminar ({pending.length})
           </h2>
           <p className="mb-4 max-w-[62ch] text-[0.85rem] text-ink-3">
-            El enlace retoma la postulación donde quedó. Mándaselo solo a la
-            persona que la empezó: quien lo tenga puede seguir escribiendo por
-            ella.
+            Conservamos lo que alcanzaron a escribir antes del cierre. Como ya
+            no estamos recibiendo postulaciones, estas sesiones no se pueden
+            retomar.
           </p>
 
           <div className="grid gap-2">
@@ -355,16 +355,6 @@ function Admin() {
                     {' · '}
                     {new Date(p.lastSeenAt).toLocaleString('es-CL')}
                   </span>
-                  <button
-                    onClick={() => {
-                      const link = `${location.origin}/postular?s=${p.id}`
-                      void navigator.clipboard.writeText(link)
-                      setCopied(p.id)
-                    }}
-                    className="cursor-pointer border-b border-success text-success"
-                  >
-                    {copied === p.id ? 'copiado' : 'copiar enlace'}
-                  </button>
                 </div>
 
                 <Bitacora log={p.log ?? []} replay={p.replay} />

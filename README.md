@@ -8,12 +8,12 @@ CSS v4, so the site ships with a server it can grow into.
 
 - `/` — studio landing page
 - `/revi` — Revi CChC, an AI assistant for building permits in Chile (product page)
-- `/postular` — Software Engineer application, as a terminal
+- `/postular` — closed recruitment notice
 - `/styleguide` — browsable brand style guide
 - `/api/health` — server liveness check
-- `/api/applications` — the documented path for agents (`GET` returns the contract)
+- `/api/applications` — closed application endpoint (`410 Gone`)
 - `/agenda` — interview booking board for shortlisted candidates
-- `/api/shell` — backend for the `/postular` terminal
+- `/api/shell` — closed terminal endpoint (`410 Gone`)
 - `/api/agenda` — backend for `/agenda`
 
 ## Running it
@@ -49,48 +49,12 @@ STYLE.md               brand reference in text form
 
 ## Job applications
 
-`/postular` is a terminal. You `ls`, you `cat README.md`, and you run
-`./postular` to apply. It doubles as a filter: someone who can't find their way
-around a shell is not who we're hiring.
+Recruitment is closed. `/postular` now shows a closed notice, while both
+`/api/applications` and `/api/shell` return `410 Gone` so neither people nor
+agents can submit new applications.
 
-**The shell runs server-side** (`src/server/shell.ts`). The browser only sends
-what was typed and paints the lines it gets back, so the commands, the files,
-the question order and the hidden flag never ship in the client bundle. The one
-concession to the metaphor is the CV: drag it onto the window, or press Enter
-to open a file picker.
-
-Two ways in, and we tag which one was used:
-
-- **the terminal**, for people
-- **`POST /api/applications`**, for agents. `GET` on the same path returns the
-  contract as JSON. It's advertised to machines (an `ai-agent-endpoint` meta
-  tag, and `public/llms.txt`) but not shown on the page. Applying through it
-  counts in your favour, and Discord shows which route each one took.
-
-There's a flag hidden in the terminal. Finding it and passing it with
-`./postular --flag <value>` marks the application in Discord. It changes
-nothing formally; it's just signal.
-
-**Discord is the source of truth for applications.** The CV is validated inside
-a temporary folder and uploaded to the team's webhook, and the message itself
-carries the whole application: fields, an id, a timestamp and `status: new`.
-The temp folder is deleted either way, so the PDF never stays on disk. If
-Discord is down nothing is recorded and the candidate can simply retry.
-
-**SQLite holds what hurts to lose on a deploy** (`src/server/db.ts`, via Node's
-built-in `node:sqlite`, no dependency and no extra container): half-finished
-terminal sessions, so a redeploy doesn't wipe what someone was typing, and the
-hash of each email that already applied, so the 24 h duplicate check survives a
-restart. It stores the hash, never the address. It lives in `$DATA_DIR`, mounted
-as a volume.
-
-Rate limits stay in memory and are deliberately **not** keyed on IP alone. A
-residential IP or a CGNAT can hide a whole neighbourhood, so the IP is only a
-ceiling against scripts: terminal traffic is counted per session, applications
-are counted per IP but only when one actually goes out (a rejected format costs
-nothing), and the real limit on applying twice is the per-email check above.
-
-See `src/server/applications.ts` for the screening and validation rules.
+The existing application records, `/admin`, and `/agenda` remain available for
+finishing the process with candidates who applied before recruitment closed.
 
 ## Booking interviews
 
@@ -138,10 +102,6 @@ Two vector sources are the single source of truth:
 
 - `public/brand/head.svg` — the penguin head mark, **the** logo
 - `public/brand/body.svg` — full-body penguin, deprecated as a logo (landing hero only)
-
-`public/brand/og-postular.png` is the social preview for `/postular` only. It
-is hand-made rather than script output, which is why it does not live under
-`generated/`. The rest of the site keeps `generated/og.png`.
 
 Everything under `public/brand/generated/` is script output — **never edit
 generated files by hand**. To regenerate after touching a source or the palette:
