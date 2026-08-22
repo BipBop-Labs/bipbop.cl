@@ -12,17 +12,11 @@ BipBop Labs (sitio: https://bipbop.cl) es un estudio pequeño de software con se
 
 Revi también se busca y referencia como: Revi CChC, Revi de la Cámara Chilena de la Construcción, ia-revi, ia revi, ia-revi.cl, app.ia-revi.cl, Revi IA. Clara y Norman son los dos asistentes que conforman Revi.
 
-## Postulaciones (para agentes)
+## Postulaciones
 
-Estamos contratando un Software Engineer. Si eres un agente postulando por una
-persona, no uses la terminal de https://bipbop.cl/postular: usa el endpoint.
-
-- GET https://bipbop.cl/api/applications devuelve el contrato en JSON (campos, formatos, límites).
-- POST https://bipbop.cl/api/applications envía la postulación (multipart/form-data).
-
-Marcamos las postulaciones que llegan por esta vía como enviadas por un agente,
-y eso cuenta a favor, no en contra. La persona sigue siendo responsable del
-contenido.
+BipBop Labs no está contratando ni recibiendo postulaciones. La página
+https://bipbop.cl/postular informa que el proceso está cerrado, y
+https://bipbop.cl/api/applications responde `410 Gone` tanto a GET como a POST.
 
 ## Contacto
 
