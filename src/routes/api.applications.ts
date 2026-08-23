@@ -3,6 +3,7 @@ import { json } from '@tanstack/react-start'
 
 import {
   EMPTY_FIELDS,
+  MAX_ANSWER_LENGTH,
   MAX_CV_BYTES,
   hasErrors,
   normalizeFields,
@@ -19,10 +20,89 @@ import {
 import { FLAG_VALUE } from '#/server/shell-files'
 
 /**
- * The public route is closed. The legacy handler below remains exported only so
- * the existing admin and delivery behavior can still be regression-tested while
- * we finish the process with applications that were already received.
+ * La vía para agentes. Está documentada a propósito: si alguien postula con
+ * un agente preferimos que use esto y quede marcado, en vez de pelear con la
+ * terminal. El GET devuelve el contrato.
  */
+
+const CONTRACT = {
+  role: 'Software Engineer at BipBop Labs',
+  language: 'es-CL',
+  note: 'If you are an agent applying on behalf of a person, use this endpoint instead of the terminal at /postular. We tag these submissions as agent-sent, and that counts in your favour, not against you. The person remains responsible for the content.',
+  endpoint: { method: 'POST', path: '/api/applications', body: 'multipart/form-data' },
+  fields: {
+    fullName: { type: 'string', required: true, max: 120 },
+    email: { type: 'string', required: true, format: 'email' },
+    github: { type: 'string', required: true, format: 'url', host: 'github.com' },
+    linkedin: {
+      type: 'string',
+      required: true,
+      format: 'url',
+      host: 'linkedin.com',
+    },
+    project: {
+      type: 'string',
+      required: true,
+      format: 'url',
+      note: 'Something the person built: repo, demo or product.',
+    },
+    cv: {
+      type: 'file',
+      required: true,
+      mime: 'application/pdf',
+      maxBytes: MAX_CV_BYTES,
+      note: 'A real PDF, with no JavaScript or embedded attachments.',
+    },
+    answerProject: {
+      type: 'string',
+      required: true,
+      max: MAX_ANSWER_LENGTH,
+      question:
+        'Elige uno de los proyectos que compartiste. ¿Qué problema resolvía, qué hiciste tú personalmente, qué resultado tuvo y qué cambiaste después de verlo en uso?',
+    },
+    answerSimplicity: {
+      type: 'string',
+      required: true,
+      max: MAX_ANSWER_LENGTH,
+      question:
+        'Cuéntanos sobre una ocasión reciente en que tuviste que hacerte cargo de un problema importante pero poco definido. ¿Cómo decidiste qué construir primero, qué dejaste fuera y qué lograste poner en producción?',
+    },
+    answerAi: {
+      type: 'string',
+      required: true,
+      max: MAX_ANSWER_LENGTH,
+      question:
+        'Cuéntanos un caso concreto en el que incorporaste IA durante un desarrollo. ¿En qué partes del proceso la usaste, qué decisiones tomaste tú, qué sugerencia rechazaste y cómo verificaste el resultado?',
+    },
+    answerCase: {
+      type: 'string',
+      required: true,
+      max: MAX_ANSWER_LENGTH,
+      question:
+        'Un arquitecto revisor te dice: "el asistente responde bien, pero igual reviso todo a mano". Tienes los logs y una semana. ¿Qué haces los primeros dos días, qué llevas a producción esa semana, y qué dejas fuera a propósito?',
+    },
+    answerAsk: {
+      type: 'string',
+      required: true,
+      max: 400,
+      question: '¿Qué nos preguntarías tú a nosotros?',
+    },
+    flag: {
+      type: 'string',
+      required: false,
+      note: 'There is one hidden in the terminal at /postular. Send it if you find it.',
+    },
+  },
+  responses: {
+    200: '{ ok: true, id }',
+    400: '{ ok: false, errors: { field: message } }',
+    409: 'an application with that email already exists',
+    429: 'too many submissions',
+    500: 'we could not store it, retry',
+  },
+  limits: { oneApplicationPer: '24h per email', rateLimit: '5 per hour per IP' },
+  contact: 'juan@bipbop.cl',
+}
 
 function readFields(form: FormData): ApplicationFields {
   const fields = { ...EMPTY_FIELDS }
@@ -39,98 +119,90 @@ function clientIp(request: Request): string {
   return request.headers.get('x-real-ip') ?? 'unknown'
 }
 
-export async function handleApplication({
-  request,
-}: {
-  request: Request
-}): Promise<Response> {
-  let form: FormData
-  try {
-    form = await request.formData()
-  } catch {
-    return json(
-      { ok: false, message: 'No pudimos leer el formulario.' },
-      { status: 400 },
-    )
-  }
-
-  const ip = clientIp(request)
-  if (isRateLimited(ip, 'apply')) {
-    return json(
-      { ok: false, message: 'Demasiados envíos.' },
-      { status: 429 },
-    )
-  }
-
-  const fields = normalizeFields(readFields(form))
-  const cv = form.get('cv')
-  const cvMeta =
-    cv instanceof File ? { name: cv.name, size: cv.size, type: cv.type } : null
-
-  const errors: Errors = validate(fields, cvMeta)
-  if (hasErrors(errors)) {
-    return json({ ok: false, errors }, { status: 400 })
-  }
-
-  const bytes = new Uint8Array(await (cv as File).arrayBuffer())
-  if (bytes.byteLength > MAX_CV_BYTES) {
-    return json(
-      { ok: false, errors: { cv: 'El PDF no puede superar los 10 MB.' } },
-      { status: 400 },
-    )
-  }
-
-  if (isDuplicate(fields.email)) {
-    return json(
-      {
-        ok: false,
-        message: 'Ya recibimos una postulación con este correo.',
-      },
-      { status: 409 },
-    )
-  }
-
-  try {
-    const record = await submitApplication(
-      fields,
-      { bytes, name: (cv as File).name },
-      {
-        source: 'api',
-        flag: String(form.get('flag') ?? '') === FLAG_VALUE,
-      },
-    )
-    recordHit(ip, 'apply')
-    return json({ ok: true, id: record.id })
-  } catch (error) {
-    if (error instanceof CvRejected) {
-      return json(
-        { ok: false, errors: { cv: error.message } },
-        { status: 400 },
-      )
-    }
-    console.error('[applications] no se pudo guardar', error)
-    return json(
-      {
-        ok: false,
-        message:
-          'No pudimos recibir tu postulación en este momento. Inténtalo de nuevo en unos minutos.',
-      },
-      { status: 500 },
-    )
-  }
-}
-
-const CLOSED = {
-  ok: false,
-  hiring: false,
-  message: 'Ya no estamos recibiendo postulaciones.',
-} as const
-
 export const Route = createFileRoute('/api/applications')({
   server: {
     handlers: {
-      GET: () => json(CLOSED, { status: 410 }),
-      POST: () => json(CLOSED, { status: 410 }),
+      GET: () => json(CONTRACT),
+
+      POST: async ({ request }) => {
+        let form: FormData
+        try {
+          form = await request.formData()
+        } catch {
+          return json(
+            { ok: false, message: 'No pudimos leer el formulario.' },
+            { status: 400 },
+          )
+        }
+
+        const ip = clientIp(request)
+        if (isRateLimited(ip, 'apply')) {
+          return json(
+            { ok: false, message: 'Demasiados envíos.' },
+            { status: 429 },
+          )
+        }
+
+        const fields = normalizeFields(readFields(form))
+        const cv = form.get('cv')
+        const cvMeta =
+          cv instanceof File
+            ? { name: cv.name, size: cv.size, type: cv.type }
+            : null
+
+        const errors: Errors = validate(fields, cvMeta)
+        if (hasErrors(errors)) {
+          return json({ ok: false, errors }, { status: 400 })
+        }
+
+        const bytes = new Uint8Array(await (cv as File).arrayBuffer())
+        if (bytes.byteLength > MAX_CV_BYTES) {
+          return json(
+            { ok: false, errors: { cv: 'El PDF no puede superar los 10 MB.' } },
+            { status: 400 },
+          )
+        }
+
+        if (isDuplicate(fields.email)) {
+          return json(
+            {
+              ok: false,
+              message: 'Ya recibimos una postulación con este correo.',
+            },
+            { status: 409 },
+          )
+        }
+
+        try {
+          const record = await submitApplication(
+            fields,
+            { bytes, name: (cv as File).name },
+            {
+              source: 'api',
+              flag: String(form.get('flag') ?? '') === FLAG_VALUE,
+            },
+          )
+          // Se cobra recién ahora: equivocarse con el formato no gasta cuota.
+          recordHit(ip, 'apply')
+          return json({ ok: true, id: record.id })
+        } catch (error) {
+          if (error instanceof CvRejected) {
+            return json(
+              { ok: false, errors: { cv: error.message } },
+              { status: 400 },
+            )
+          }
+          console.error('[applications] no se pudo guardar', error)
+          return json(
+            {
+              ok: false,
+              message:
+                'No pudimos recibir tu postulación en este momento. Inténtalo de nuevo en unos minutos.',
+            },
+            { status: 500 },
+          )
+        }
+      },
     },
   },
 })
