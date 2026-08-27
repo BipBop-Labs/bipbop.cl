@@ -1,6 +1,8 @@
 import { mkdirSync } from 'node:fs'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DatabaseSync } from 'node:sqlite'
+import { DatabaseSync, backup } from 'node:sqlite'
 
 /**
  * SQLite, con el módulo que ya trae Node: sin dependencias ni un contenedor
@@ -78,6 +80,21 @@ export function getDb(): DatabaseSync {
   }
 
   return db
+}
+
+/**
+ * Crea una copia consistente aunque SQLite esté usando WAL. El archivo temporal
+ * existe solo mientras se arma la respuesta de descarga del panel admin.
+ */
+export async function exportDb(): Promise<Uint8Array> {
+  const dir = await mkdtemp(join(tmpdir(), 'bipbop-backup-'))
+  const path = join(dir, 'bipbop.db')
+  try {
+    await backup(getDb(), path)
+    return new Uint8Array(await readFile(path))
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
 }
 
 /** Para los tests, que cambian de carpeta entre casos. */

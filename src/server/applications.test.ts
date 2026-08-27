@@ -1,6 +1,7 @@
-import { mkdtemp, readdir } from 'node:fs/promises'
+import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { EMPTY_FIELDS } from '#/lib/application'
@@ -302,6 +303,60 @@ describe('POST /api/admin', () => {
     })
     expect(cv.headers.get('content-type')).toBe('application/pdf')
     expect(new Uint8Array(await cv.arrayBuffer())).toEqual(PDF)
+  })
+
+  it('descarga un respaldo SQLite completo solo con la llave de admin', async () => {
+    process.env.ADMIN_KEY = 'una-llave-suficientemente-larga'
+    discordOk()
+    await submit()
+
+    const source = new DatabaseSync(join(process.env.DATA_DIR!, 'bipbop.db'))
+    source
+      .prepare(
+        `INSERT INTO sessions (id, created_at, updated_at, state, cv, cv_name)
+         VALUES (?, ?, ?, ?, NULL, NULL)`,
+      )
+      .run(
+        'incompleta-1',
+        Date.now() - 60_000,
+        Date.now(),
+        JSON.stringify({
+          step: 2,
+          draft: { ...EMPTY_FIELDS, fullName: 'Grace Hopper' },
+          done: false,
+          log: [{ at: Date.now(), text: 'inició ./postular' }],
+        }),
+      )
+    source.close()
+
+    const denied = await call({ action: 'export', key: 'incorrecta' })
+    expect(denied.status).toBe(401)
+
+    const exported = await call({ action: 'export', key: process.env.ADMIN_KEY })
+    expect(exported.status).toBe(200)
+    expect(exported.headers.get('content-type')).toBe('application/vnd.sqlite3')
+    expect(exported.headers.get('content-disposition')).toMatch(
+      /^attachment; filename="bipbop-\d{4}-\d{2}-\d{2}\.db"$/,
+    )
+
+    const copyDir = await mkdtemp(join(tmpdir(), 'bipbop-export-'))
+    const copyPath = join(copyDir, 'backup.db')
+    await writeFile(copyPath, new Uint8Array(await exported.arrayBuffer()))
+    const backup = new DatabaseSync(copyPath, { readOnly: true })
+
+    expect(
+      backup.prepare('SELECT full_name FROM applications').get(),
+    ).toMatchObject({ full_name: 'Ada Lovelace' })
+    const incomplete = backup
+      .prepare('SELECT state FROM sessions WHERE id = ?')
+      .get('incompleta-1') as { state: string }
+    expect(JSON.parse(incomplete.state)).toMatchObject({
+      draft: { fullName: 'Grace Hopper' },
+      done: false,
+      log: [{ text: 'inició ./postular' }],
+    })
+    backup.close()
+    await rm(copyDir, { recursive: true, force: true })
   })
 })
 

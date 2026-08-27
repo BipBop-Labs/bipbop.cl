@@ -4,6 +4,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 
 import { getCv, listApplications, redeliver } from '#/server/applications'
+import { exportDb } from '#/server/db'
 import { cancel, listMeetings } from '#/server/meetings'
 import { listPendingSessions } from '#/server/shell'
 
@@ -53,6 +54,19 @@ export const Route = createFileRoute('/api/admin')({
             if (!body.id) return json({ ok: false }, { status: 400 })
             cancel(body.id)
             return json({ ok: true, meetings: listMeetings() })
+          }
+
+          case 'export': {
+            const bytes = await exportDb()
+            const date = new Date().toISOString().slice(0, 10)
+            return new Response(bytes as BufferSource, {
+              headers: {
+                'content-type': 'application/vnd.sqlite3',
+                'content-disposition': `attachment; filename="bipbop-${date}.db"`,
+                'cache-control': 'no-store',
+                'x-content-type-options': 'nosniff',
+              },
+            })
           }
 
           case 'cv': {

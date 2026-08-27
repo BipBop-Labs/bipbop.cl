@@ -168,6 +168,7 @@ function Admin() {
   const [copied, setCopied] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const call = useCallback(
     async (body: Record<string, unknown>, adminKey: string) =>
@@ -232,6 +233,31 @@ function Admin() {
       .getElementById(`app-${buscada}`)
       ?.scrollIntoView({ block: 'center' })
   }, [apps])
+
+  async function downloadBackup() {
+    setExporting(true)
+    setError('')
+    try {
+      const res = await call({ action: 'export' }, key)
+      if (!res.ok) {
+        setError(`No pudimos crear el respaldo (${res.status}).`)
+        return
+      }
+      const disposition = res.headers.get('content-disposition') ?? ''
+      const filename =
+        /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'bipbop.db'
+      const url = URL.createObjectURL(await res.blob())
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setError('No pudimos descargar el respaldo.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   async function downloadCv(app: Application) {
     const res = await call({ action: 'cv', id: app.id }, key)
@@ -311,16 +337,30 @@ function Admin() {
           Postulaciones{' '}
           <span className="font-normal text-ink-3">({apps.length})</span>
         </h1>
-        {pendientes > 0 ? (
-          <span className="text-[0.85rem] text-danger">
-            {pendientes} sin entregar a Discord
-          </span>
-        ) : (
-          <span className="text-[0.85rem] text-ink-3">
-            todas entregadas a Discord
-          </span>
-        )}
+        <div className="flex flex-wrap items-center gap-4">
+          {pendientes > 0 ? (
+            <span className="text-[0.85rem] text-danger">
+              {pendientes} sin entregar a Discord
+            </span>
+          ) : (
+            <span className="text-[0.85rem] text-ink-3">
+              todas entregadas a Discord
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => void downloadBackup()}
+            disabled={exporting}
+            className="cursor-pointer rounded-[2px] border border-line px-3 py-1.5 text-[0.8rem] text-ink-2 hover:border-success hover:text-success disabled:cursor-wait disabled:opacity-50"
+          >
+            {exporting ? 'Preparando respaldo…' : 'Descargar base y logs'}
+          </button>
+        </div>
       </header>
+
+      {error ? (
+        <p className="mb-6 text-[0.85rem] text-danger">{error}</p>
+      ) : null}
 
       {pending.length > 0 ? (
         <section className="mb-12">
