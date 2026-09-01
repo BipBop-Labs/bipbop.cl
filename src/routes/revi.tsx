@@ -4,10 +4,10 @@ import {
   MUNICIPIOS,
   MUNICIPIOS_COUNT,
   MUNICIPIOS_TEXTO,
-  PROXIMOS_TEXTO,
 } from '#/data/municipios'
 import { capture } from '#/lib/analytics'
 import { reviSchema } from '#/data/schema'
+import { REVI_PRESS } from '#/data/revi-press'
 
 const DESCRIPTION =
   'Revi CChC es el asistente con IA de la Cámara Chilena de la Construcción para permisos de edificación en Chile: lee planos y guía a solicitantes y a la DOM.'
@@ -19,11 +19,6 @@ export const Route = createFileRoute('/revi')({
         title: 'Revi CChC · Asistente IA para permisos de edificación en Chile',
       },
       { name: 'description', content: DESCRIPTION },
-      {
-        name: 'keywords',
-        content:
-          'Revi, Revi CChC, Revi Cámara Chilena de la Construcción, qué es Revi, cómo funciona Revi, quién hizo Revi, ia-revi, ia revi, ia-revi.cl, app.ia-revi.cl, Revi IA, Revi CChC IA, permisos de edificación Chile, permiso edificación IA, BipBop Labs, Clara Revi, Norman Revi, DOM Chile, Direcciones de Obras Municipales, asistente IA construcción, LGUC, OGUC',
-      },
       { property: 'og:type', content: 'article' },
       {
         property: 'og:title',
@@ -49,6 +44,9 @@ export const Route = createFileRoute('/revi')({
           'Revi CChC, asistente con IA de la Cámara Chilena de la Construcción para permisos de edificación',
       },
       { property: 'og:locale', content: 'es_CL' },
+      { property: 'article:published_time', content: '2026-05-17' },
+      { property: 'article:modified_time', content: '2026-09-01' },
+      { property: 'article:author', content: 'Juan Vargas' },
       { name: 'twitter:card', content: 'summary_large_image' },
       {
         name: 'twitter:title',
@@ -103,8 +101,7 @@ const FAQ = [
     a: (
       <>
         Revi está en producción en {MUNICIPIOS_COUNT} municipios de Chile:{' '}
-        {MUNICIPIOS_TEXTO}. Además, {PROXIMOS_TEXTO} están en proceso de
-        implementación.
+        {MUNICIPIOS_TEXTO}.
       </>
     ),
   },
@@ -185,7 +182,11 @@ function AppLink({
 
 function Revi() {
   return (
-    <main className="mx-auto max-w-[760px] px-6 pt-16 pb-24 leading-[1.65]">
+    <main
+      className="mx-auto max-w-[760px] px-6 pt-16 pb-24 leading-[1.65]"
+      itemScope
+      itemType="https://schema.org/Article"
+    >
       <nav
         className="mb-8 text-[0.78rem] tracking-[0.08em] text-ink-3 uppercase"
         aria-label="Breadcrumb"
@@ -199,17 +200,28 @@ function Revi() {
         / Revi
       </nav>
 
-      <div
-        className="mb-10 aspect-[1441/360] rounded-[6px] border border-line bg-[url('/brand/projects/revi/banner.webp')] bg-cover bg-center bg-no-repeat"
-        role="img"
-        aria-label="Revi CChC, asistente con IA de la Cámara Chilena de la Construcción para permisos de edificación"
+      <img
+        className="mb-10 aspect-[1441/454] h-auto w-full rounded-[6px] border border-line object-cover"
+        src="/brand/projects/revi/banner.webp"
+        width="1441"
+        height="454"
+        alt="Revi CChC, asistente con IA de la Cámara Chilena de la Construcción para permisos de edificación"
+        fetchPriority="high"
+        decoding="async"
+        itemProp="image"
       />
 
-      <h1 className="mb-5 font-display text-[clamp(2.2rem,5vw,3.4rem)] leading-[1.1] font-normal tracking-[-0.01em]">
+      <h1
+        className="mb-5 font-display text-[clamp(2.2rem,5vw,3.4rem)] leading-[1.1] font-normal tracking-[-0.01em]"
+        itemProp="headline"
+      >
         Qué es Revi <em className="text-success italic">de la CChC</em>
       </h1>
 
-      <p className="mb-10 max-w-[60ch] text-[1.2rem] leading-[1.55] font-normal text-ink-2">
+      <p
+        className="mb-10 max-w-[60ch] text-[1.2rem] leading-[1.55] font-normal text-ink-2"
+        itemProp="description"
+      >
         <strong>Revi</strong> (también conocido como <strong>Revi CChC</strong>{' '}
         o <strong>ia-revi</strong>) es el asistente con inteligencia artificial
         de la <strong>Cámara Chilena de la Construcción (CChC)</strong> para{' '}
@@ -222,7 +234,7 @@ function Revi() {
         <AppLink location="body">Prueba Revi en app.ia-revi.cl</AppLink>
       </p>
 
-      <p className="mb-10 text-[0.85rem] text-ink-2">
+      <p className="mb-8 text-[0.85rem] text-ink-2">
         Por{' '}
         <a
           className="border-b border-dotted border-ink-3 text-ink-2 no-underline hover:opacity-70"
@@ -239,10 +251,31 @@ function Revi() {
         >
           BipBop Labs
         </Link>
-        . Publicado el 17 de mayo de 2026, actualizado el 18 de agosto de 2026.
+        . Publicado el{' '}
+        <time dateTime="2026-05-17" itemProp="datePublished">
+          17 de mayo de 2026
+        </time>
+        , actualizado el{' '}
+        <time dateTime="2026-09-01" itemProp="dateModified">
+          1 de septiembre de 2026
+        </time>
+        .
       </p>
 
-      <h2 className={H2}>¿Para qué sirve Revi?</h2>
+      <nav
+        className="mb-12 border-y border-line py-5 text-[0.92rem]"
+        aria-label="Contenido del artículo"
+      >
+        <p className="mb-2 font-semibold">En esta página</p>
+        <ul className="grid grid-cols-2 gap-x-6 gap-y-2 max-[560px]:grid-cols-1">
+          <li><a className={A} href="#para-que-sirve">Para qué sirve</a></li>
+          <li><a className={A} href="#como-se-usa">Cómo se usa</a></li>
+          <li><a className={A} href="#donde-se-usa">Municipios disponibles</a></li>
+          <li><a className={A} href="#faq">Preguntas frecuentes</a></li>
+        </ul>
+      </nav>
+
+      <h2 className={H2} id="para-que-sirve">¿Para qué sirve Revi?</h2>
       <p className={P}>
         Tramitar un <strong>permiso de edificación en Chile</strong> es un
         proceso largo, lleno de normativa específica (LGUC, OGUC, planos
@@ -252,7 +285,11 @@ function Revi() {
         norma, y propone correcciones antes de que el caso vuelva a revisión.
         Según la <strong>CChC</strong>, la herramienta ha reducido los tiempos
         de tramitación en cerca de un <strong>30%</strong> en los municipios
-        donde ya opera.
+        donde ya opera, de acuerdo con la{' '}
+        <a className={A} href={REVI_PRESS[2].href} target="_blank" rel="noopener noreferrer">
+          cobertura de La Tercera
+        </a>
+        .
       </p>
       <p className={P}>
         Revi fue impulsado por la{' '}
@@ -265,7 +302,7 @@ function Revi() {
         .
       </p>
 
-      <h2 className={H2}>¿Cómo se usa Revi CChC?</h2>
+      <h2 className={H2} id="como-se-usa">¿Cómo se usa Revi CChC?</h2>
       <p className={P}>
         Para usar Revi, entra a{' '}
         <AppLink location="body">app.ia-revi.cl</AppLink> y elige el asistente
@@ -282,15 +319,17 @@ function Revi() {
           src="/brand/projects/revi/clara.svg"
           name="Clara"
           copy="Para solicitantes. Ayuda a preparar el expediente y a entender qué pide la normativa antes de ingresarlo a la DOM."
+          href="https://app.ia-revi.cl/clara"
         />
         <AssistantCard
           src="/brand/projects/revi/norman.svg"
           name="Norman"
           copy="Para revisores municipales. Apoya a las Direcciones de Obras Municipales a revisar expedientes contra la normativa vigente."
+          href="https://app.ia-revi.cl/norman"
         />
       </div>
 
-      <h2 className={H2}>Dónde se usa Revi</h2>
+      <h2 className={H2} id="donde-se-usa">Dónde se usa Revi</h2>
       <p className={P}>
         Revi está en producción en {MUNICIPIOS_COUNT} municipios de Chile:
       </p>
@@ -299,11 +338,36 @@ function Revi() {
           <li key={slug}>Municipalidad de {name}</li>
         ))}
       </ul>
+
+      <h2 className={H2}>Revi en la prensa</h2>
       <p className={P}>
-        Están en proceso de implementación {PROXIMOS_TEXTO}. La CChC proyecta
-        llegar a <strong>22 municipios durante 2026</strong> y a{' '}
-        <strong>75 en 2027</strong>, año en que la Cámara cumple 75 años.
+        El lanzamiento, la expansión municipal y los resultados de Revi han
+        sido cubiertos por medios nacionales y especializados.
       </p>
+      <div className="mb-8 grid grid-cols-2 gap-4 max-[560px]:grid-cols-1">
+        {REVI_PRESS.map((item) => (
+          <a
+            key={item.href}
+            className="group flex flex-col rounded-[6px] border border-line bg-surface p-5 text-ink no-underline transition-colors hover:border-success"
+            href={item.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() =>
+              capture('revi_press_link_clicked', { outlet: item.outlet })
+            }
+          >
+            <span className="mb-3 text-[0.72rem] tracking-[0.08em] text-ink-3 uppercase">
+              {item.outlet} · {item.date}
+            </span>
+            <span className="text-[1rem] leading-[1.45] font-semibold group-hover:text-success">
+              {item.title}
+            </span>
+            <span className="mt-auto pt-4 text-[0.82rem] text-success">
+              Leer artículo ↗
+            </span>
+          </a>
+        ))}
+      </div>
 
       <h2 className={H2}>Glosario rápido: DOM, LGUC y OGUC</h2>
       <p className={P}>
@@ -405,13 +469,27 @@ function AssistantCard({
   src,
   name,
   copy,
+  href,
 }: {
   src: string
   name: string
   copy: string
+  href: string
 }) {
   return (
-    <div className="rounded-[6px] border border-line bg-surface p-5">
+    <a
+      className="group rounded-[6px] border border-line bg-surface p-5 text-ink no-underline transition-colors hover:border-success focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-success"
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Abrir ${name} Revi`}
+      onClick={() =>
+        capture('revi_assistant_link_clicked', {
+          assistant: name.toLowerCase(),
+          location: 'revi',
+        })
+      }
+    >
       <img
         className="mb-3 h-12 w-12"
         src={src}
@@ -419,8 +497,10 @@ function AssistantCard({
         loading="lazy"
         decoding="async"
       />
-      <h3 className="mb-2 text-[1.05rem] font-semibold">{name}</h3>
+      <h3 className="mb-2 text-[1.05rem] font-semibold group-hover:text-success">
+        {name} ↗
+      </h3>
       <p className="text-[0.95rem] text-ink-2">{copy}</p>
-    </div>
+    </a>
   )
 }

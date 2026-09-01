@@ -1,13 +1,14 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 
 import { Wordmark } from '#/components/wordmark'
+import { capture } from '#/lib/analytics'
+import { homeSchema } from '#/data/schema'
+import { REVI_PRESS } from '#/data/revi-press'
 import {
   MUNICIPIOS,
   MUNICIPIOS_COUNT,
   MUNICIPIOS_TEXTO,
 } from '#/data/municipios'
-import { capture } from '#/lib/analytics'
-import { homeSchema } from '#/data/schema'
 import { useLang, useT } from '#/lib/lang'
 
 const DESCRIPTION =
@@ -67,15 +68,16 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
-const CARD = 'mb-20 overflow-hidden rounded-[6px] border border-line bg-surface'
+const CARD =
+  'mb-20 overflow-hidden rounded-[6px] border border-line bg-surface max-[560px]:mb-14'
 const BANNER_SHADE =
   'absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.05)_0%,var(--color-surface)_100%)]'
 const SECTION_HEAD =
-  'rule-after mb-10 flex items-center gap-4 text-[0.85rem] font-medium text-ink-3'
+  'rule-after mb-10 flex items-center gap-4 text-[0.85rem] font-semibold tracking-[0.01em] text-ink-3 max-[560px]:mb-7'
 const FEATURED_CTA =
-  'border-b border-success text-base text-success no-underline transition-opacity duration-200 hover:opacity-70'
+  'inline-flex min-h-11 items-center border-b border-success text-base font-semibold text-success no-underline underline-offset-4 transition-colors duration-200 hover:border-success-hover hover:text-success-hover focus-visible:rounded-[2px]'
 const PROSE_LINK =
-  'border-b border-dotted border-ink-3 text-ink no-underline transition-all duration-200 hover:border-success hover:text-success'
+  'border-b border-dotted border-ink-3 text-ink no-underline underline-offset-4 transition-colors duration-200 hover:border-success hover:text-success focus-visible:rounded-[2px]'
 
 function Home() {
   const t = useT()
@@ -97,18 +99,18 @@ function Home() {
             aria-hidden="true"
           />
 
-          <section className="mb-20" id="work">
-            <div className={`${SECTION_HEAD} !text-success`}>
+          <section className="mb-20 scroll-mt-8 max-[560px]:mb-14" id="work">
+            <h2 className={`${SECTION_HEAD} !text-success`}>
               <span>
                 {t('En lo que estamos ahora', "What we're on right now")}
               </span>
-            </div>
+            </h2>
 
             <ReviCard />
 
-            <div className="mb-6 text-base text-ink-3">
+            <h2 className="mb-6 text-base font-semibold text-ink-2">
               {t('También en marcha', 'Also in the works')}
-            </div>
+            </h2>
 
             <CompactCard
               srHeading="CDT: herramientas internas para la Corporación de Desarrollo Tecnológico"
@@ -121,30 +123,6 @@ function Home() {
                 "A few smaller things we're building for the CChC's tech arm. We're working towards meetings that take their own notes, areas that keep up with each other without chasing for updates, and one place to see what's going on across the org. Still early, and still building our way there.",
               )}
             />
-          </section>
-
-          <div className={SECTION_HEAD} id="what-we-do">
-            <span>{t('Qué hacemos', 'What we do')}</span>
-          </div>
-
-          <section className="mb-20">
-            <div className="grid grid-cols-[minmax(0,62ch)_clamp(110px,16vw,170px)] items-start gap-8 text-[1.05rem] leading-[1.7] text-ink max-[560px]:block max-[560px]:max-w-[62ch]">
-              <div>
-                <p>
-                  <span className="mr-[0.35rem] font-semibold text-success">
-                    {t('Cómo trabajamos.', 'How we work.')}
-                  </span>
-                  {t(
-                    'Pocos proyectos a la vez. Pensamos contigo qué hay que construir, lo construimos, y nos quedamos hasta resolverlo.',
-                    "Two or three projects at a time. We figure out with you what needs to be built, we build it, and we stay on it until it's solved.",
-                  )}
-                </p>
-              </div>
-              <span
-                className="block aspect-square w-full bg-[url('/brand/generated/bipbop_logo.webp')] bg-contain bg-center bg-no-repeat opacity-90 max-[560px]:mx-auto max-[560px]:mb-6 max-[560px]:w-36"
-                aria-hidden="true"
-              />
-            </div>
           </section>
 
           <About />
@@ -160,6 +138,7 @@ function Home() {
 
 function StatusBar() {
   const { lang, setLang } = useLang()
+  const t = useT()
 
   const pick = (next: 'es' | 'en') => {
     setLang(next)
@@ -170,12 +149,17 @@ function StatusBar() {
     <div className="pointer-events-none fixed top-0 right-0 left-0 z-50 flex items-center justify-between px-6 py-[0.7rem] text-[0.68rem] tracking-[0.08em] text-ink-3 uppercase max-[720px]:px-4 max-[720px]:py-[0.65rem] max-[720px]:text-[0.6rem]">
       <div className="flex items-center gap-5" />
       <div className="pointer-events-auto flex items-center gap-5">
-        <div className="flex gap-0 overflow-hidden rounded-[2px] border border-line">
+        <div
+          className="flex gap-0 overflow-hidden rounded-[2px] border border-line bg-page/90 backdrop-blur-sm"
+          role="group"
+          aria-label={t('Idioma', 'Language')}
+        >
           {(['en', 'es'] as const).map((code) => (
             <button
               key={code}
               onClick={() => pick(code)}
-              className={`cursor-pointer border-0 px-[0.55rem] py-1 text-[0.65rem] tracking-[0.1em] transition-all duration-200 ${
+              aria-pressed={lang === code}
+              className={`min-h-11 min-w-11 cursor-pointer border-0 px-[0.65rem] py-1 text-[0.65rem] tracking-[0.1em] transition-colors duration-200 focus-visible:outline-offset-[-3px] ${
                 lang === code
                   ? 'bg-success-soft text-success'
                   : 'bg-transparent text-ink-3 hover:text-ink'
@@ -197,11 +181,11 @@ function Hero() {
     '[text-shadow:0_0_14px_var(--color-page),0_0_4px_var(--color-page)]'
 
   return (
-    <section className="hero-skyline relative mb-0 flex min-h-screen flex-col justify-center pb-8 [&>*]:relative [&>*]:z-[2]">
+    <section className="hero-skyline relative mb-0 flex min-h-screen flex-col items-center justify-center pb-8 text-center [&>*]:relative [&>*]:z-[2]">
       <Wordmark />
 
       <p
-        className={`motion-safe-opacity mt-8 max-w-[42ch] animate-rise text-[clamp(1.25rem,2.4vw,1.6rem)] leading-[1.4] font-semibold text-ink opacity-0 [animation-delay:0.15s] ${glow}`}
+        className={`motion-safe-opacity mt-8 max-w-[42ch] animate-rise text-[clamp(1.25rem,2.4vw,1.6rem)] leading-[1.4] font-semibold text-ink opacity-0 [animation-delay:1.8s] ${glow}`}
       >
         <em className="text-success not-italic">
           {t('Software hecho con cariño', 'Thoughtful software')}
@@ -212,29 +196,20 @@ function Hero() {
         )}
       </p>
 
-      <p
-        className={`motion-safe-opacity mt-6 max-w-[56ch] animate-rise text-base leading-[1.7] font-medium text-ink opacity-0 [animation-delay:0.3s] [text-shadow:0_0_10px_var(--color-page),0_0_3px_var(--color-page)]`}
-      >
-        {t(
-          'Tomamos pocos proyectos a la vez. Y nos quedamos cerca hasta que de verdad funcione.',
-          'We take on a few projects at a time. And we stay close until it truly works.',
-        )}
-      </p>
-
-      <div className="motion-safe-opacity mt-8 flex animate-rise flex-wrap gap-3 opacity-0 [animation-delay:0.45s]">
+      <div className="motion-safe-opacity mt-8 flex animate-rise flex-wrap justify-center gap-3 opacity-0 [animation-delay:1.95s]">
         <a
-          className="inline-flex cursor-pointer items-center gap-[0.55rem] rounded-[2px] border border-success bg-[color-mix(in_srgb,var(--color-success)_12%,transparent)] px-[1.05rem] py-[0.7rem] text-[0.95rem] font-bold text-success no-underline"
+          className="inline-flex min-h-12 cursor-pointer items-center gap-[0.55rem] rounded-[2px] border border-line bg-[color-mix(in_srgb,var(--color-ink)_6%,transparent)] px-[1.05rem] py-[0.7rem] text-[0.95rem] font-semibold text-ink no-underline transition-colors duration-200 hover:border-line-strong hover:bg-subtle active:bg-line"
+          href="#work"
+          onClick={() => capture('work_cta_clicked')}
+        >
+          {t('Nuestro trabajo', 'Our work')}
+        </a>
+        <a
+          className="inline-flex min-h-12 cursor-pointer items-center gap-[0.55rem] rounded-[2px] border border-success bg-[color-mix(in_srgb,var(--color-success)_12%,transparent)] px-[1.05rem] py-[0.7rem] text-[0.95rem] font-bold text-success no-underline transition-colors duration-200 hover:bg-success-soft hover:text-success-hover active:bg-[color-mix(in_srgb,var(--color-success)_22%,transparent)]"
           href="#contact"
           onClick={() => capture('contact_cta_clicked')}
         >
           {t('Conversemos', "Let's talk")}
-        </a>
-        <a
-          className="inline-flex cursor-pointer items-center gap-[0.55rem] rounded-[2px] border border-line bg-[color-mix(in_srgb,var(--color-ink)_6%,transparent)] px-[1.05rem] py-[0.7rem] text-[0.95rem] font-semibold text-ink no-underline"
-          href="#what-we-do"
-          onClick={() => capture('work_cta_clicked')}
-        >
-          {t('Lo que hacemos', 'What we do')}
         </a>
       </div>
     </section>
@@ -249,14 +224,19 @@ function ReviCard() {
 
   return (
     <article className={CARD}>
-      <h2 className="sr-only">
+      <h3 className="sr-only">
         Revi — asistente con IA para permisos de edificación de la Cámara
         Chilena de la Construcción (CChC)
-      </h2>
-      <div className="relative aspect-[1441/360] bg-[url('/brand/projects/revi/banner.webp')] bg-cover bg-center">
+      </h3>
+      <div className="relative">
+        <img
+          className="block h-auto w-full"
+          src="/brand/projects/revi/banner.png"
+          alt="Revi, permisos de edificación impulsados con inteligencia artificial"
+        />
         <div className={BANNER_SHADE} />
       </div>
-      <div className="px-9 pt-8 pb-9">
+      <div className="px-9 pt-8 pb-9 max-[560px]:px-5 max-[560px]:pt-6 max-[560px]:pb-7">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-6">
           <div>
             <img
@@ -280,37 +260,18 @@ function ReviCard() {
           )}
         </p>
 
-        <p>
-          <a
-            className={FEATURED_CTA}
-            href="https://app.ia-revi.cl/"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={onReviLink}
-          >
-            {t('Prueba Revi', 'Try Revi')}
-          </a>
-          &nbsp;·&nbsp;
-          <Link
-            className={FEATURED_CTA}
-            to="/revi"
-            title={t('Qué es Revi CChC', 'About Revi CChC')}
-            onClick={onReviLink}
-          >
-            {t('Qué es Revi CChC', 'About Revi CChC')}
-          </Link>
-        </p>
-
         <div className="mt-6 flex flex-wrap items-center gap-6">
           <Assistant
             src="/brand/projects/revi/clara.svg"
             name="Clara"
             role={t('Para solicitantes', 'For applicants')}
+            href="https://app.ia-revi.cl/clara"
           />
           <Assistant
             src="/brand/projects/revi/norman.svg"
             name="Norman"
             role={t('Para revisores municipales', 'For city reviewers')}
+            href="https://app.ia-revi.cl/norman"
           />
         </div>
 
@@ -322,15 +283,28 @@ function ReviCard() {
             )}
           </div>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] items-center justify-items-center gap-x-5 gap-y-7">
-            {MUNICIPIOS.map(([slug, name]) => (
-              <img
+            {MUNICIPIOS.map(([slug, name, href]) => (
+              <a
                 key={slug}
-                src={`/brand/projects/revi/municipalidades/${slug}.webp`}
-                loading="lazy"
-                decoding="async"
-                alt={`Municipalidad de ${name}`}
-                className="h-auto max-h-12 w-auto max-w-full object-contain opacity-85 grayscale-[0.2] transition-[opacity,filter] duration-200 hover:opacity-100 hover:grayscale-0"
-              />
+                className="flex h-14 w-full items-center justify-center rounded-[4px] p-1 transition-colors hover:bg-page focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-success"
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Visitar el sitio de la Municipalidad de ${name}`}
+                onClick={() =>
+                  capture('revi_municipality_link_clicked', {
+                    municipality: name,
+                  })
+                }
+              >
+                <img
+                  src={`/brand/projects/revi/municipalidades/${slug}.webp`}
+                  loading="lazy"
+                  decoding="async"
+                  alt={`Municipalidad de ${name}`}
+                  className="h-auto max-h-12 w-auto max-w-full object-contain opacity-85 grayscale-[0.2] transition-[opacity,filter] duration-200 hover:opacity-100 hover:grayscale-0"
+                />
+              </a>
             ))}
           </div>
           <p className="sr-only">
@@ -338,6 +312,47 @@ function ReviCard() {
             {MUNICIPIOS_TEXTO}.{' '}
           </p>
         </div>
+
+        <div className="mt-8 border-t border-line pt-6">
+          <div className="mb-4 text-base text-ink-3">
+            {t('Revi en la prensa', 'Revi in the press')}
+          </div>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-4 max-[560px]:grid-cols-1">
+            {REVI_PRESS.map((item) => (
+              <a
+                key={item.href}
+                className="group text-ink no-underline"
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() =>
+                  capture('revi_press_link_clicked', {
+                    outlet: item.outlet,
+                    location: 'home',
+                  })
+                }
+              >
+                <span className="block text-[0.72rem] tracking-[0.07em] text-ink-3 uppercase">
+                  {item.outlet} · {item.date}
+                </span>
+                <span className="external-link mt-1 block text-[0.92rem] leading-[1.4] transition-colors group-hover:text-success">
+                  {item.title}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <p className="mt-8 border-t border-line pt-6">
+          <a
+            className={FEATURED_CTA}
+            href="/revi"
+            title={t('Qué es Revi CChC', 'About Revi CChC')}
+            onClick={onReviLink}
+          >
+            {t('Conoce el caso Revi', 'Explore the Revi case study')}
+          </a>
+        </p>
       </div>
     </article>
   )
@@ -347,13 +362,27 @@ function Assistant({
   src,
   name,
   role,
+  href,
 }: {
   src: string
   name: string
   role: string
+  href: string
 }) {
   return (
-    <div className="flex items-center gap-[0.6rem]">
+    <a
+      className="group flex items-center gap-[0.6rem] rounded-[4px] text-ink no-underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-success"
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Abrir ${name} Revi`}
+      onClick={() =>
+        capture('revi_assistant_link_clicked', {
+          assistant: name.toLowerCase(),
+          location: 'home',
+        })
+      }
+    >
       <img
         className="block h-9 w-9"
         src={src}
@@ -362,10 +391,12 @@ function Assistant({
         decoding="async"
       />
       <div>
-        <div className="text-[1.05rem] text-ink">{name}</div>
+        <div className="external-link text-[1.05rem] text-ink transition-colors group-hover:text-success">
+          {name}
+        </div>
         <div className="text-[0.9rem] text-ink-3">{role}</div>
       </div>
-    </div>
+    </a>
   )
 }
 
@@ -388,14 +419,14 @@ function CompactCard({
 
   return (
     <article className={`${CARD} !mb-8`}>
-      <h2 className="sr-only">{srHeading}</h2>
+      <h3 className="sr-only">{srHeading}</h3>
       <div
         className="relative aspect-[1441/300] bg-cover bg-center"
         style={{ backgroundImage: `url('${banner}')` }}
       >
         <div className={BANNER_SHADE} />
       </div>
-      <div className="px-9 pt-6 pb-7">
+      <div className="px-9 pt-6 pb-7 max-[560px]:px-5 max-[560px]:pt-5 max-[560px]:pb-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-6">
           <div className="flex flex-col gap-[0.3rem]">
             <span className="text-[1.4rem] leading-[1.2] text-ink">
@@ -426,11 +457,11 @@ function About() {
   const t = useT()
 
   return (
-    <section className="mb-20 grid grid-cols-[1.7fr_1fr] gap-12 max-[720px]:grid-cols-1 max-[720px]:gap-8">
+    <section className="mb-20 grid grid-cols-[1.7fr_1fr] gap-12 max-[720px]:grid-cols-1 max-[720px]:gap-8 max-[560px]:mb-14">
       <div>
-        <div className={SECTION_HEAD}>
+        <h2 className={SECTION_HEAD}>
           <span>{t('Quiénes estamos detrás', "Who's behind this")}</span>
-        </div>
+        </h2>
         <div className="max-w-[56ch] text-base leading-[1.7] text-ink-2 [&_p+p]:mt-4">
           <p>
             {t(
@@ -452,9 +483,9 @@ function About() {
       </div>
 
       <aside>
-        <div className={SECTION_HEAD}>
+        <h2 className={SECTION_HEAD}>
           <span>{t('Saluda', 'Say hi')}</span>
-        </div>
+        </h2>
         <dl className="motion-safe-opacity flex flex-col gap-0 text-[0.78rem]">
           <MetaRow label={t('Desde', 'Based in')}>Santiago, Chile</MetaRow>
           <MetaRow label={t('Contacto', 'Contact')}>
@@ -496,16 +527,16 @@ function Contact() {
 
   return (
     <section
-      className="mt-8 flex flex-col items-center gap-7 border-t border-line pt-12 pb-8 text-center"
+      className="mt-8 flex scroll-mt-8 flex-col items-center gap-7 border-t border-line pt-12 pb-8 text-center max-[560px]:pt-10"
       id="contact"
     >
-      <p className="text-[clamp(1.3rem,2.6vw,1.8rem)] leading-[1.3] font-normal text-ink">
+      <h2 className="text-[clamp(1.3rem,2.6vw,1.8rem)] leading-[1.3] font-normal text-ink">
         {t('¿Tienes un ', 'Got a ')}
         <em className="text-success not-italic">{t('problema', 'problem')}</em>
         {t(' que resolver?', ' to solve?')}
-      </p>
+      </h2>
       <a
-        className="arrow-before inline-flex items-center gap-[0.6rem] justify-self-end rounded-[2px] border border-line px-[1.2rem] py-[0.9rem] text-base text-ink no-underline transition-all duration-[250ms] hover:border-success hover:bg-success-soft hover:text-success hover:shadow-[0_0_24px_var(--color-success)] max-[720px]:justify-self-start"
+        className="arrow-before inline-flex min-h-12 items-center gap-[0.6rem] justify-self-end rounded-[2px] border border-line px-[1.2rem] py-[0.9rem] text-base text-ink no-underline transition-[color,background-color,border-color,box-shadow] duration-[250ms] hover:border-success hover:bg-success-soft hover:text-success hover:shadow-[0_8px_24px_color-mix(in_srgb,var(--color-success)_18%,transparent)] active:bg-[color-mix(in_srgb,var(--color-success)_20%,transparent)] max-[720px]:justify-self-start"
         href="mailto:juan@bipbop.cl"
         onClick={() =>
           capture('contact_email_clicked', { source: 'contact_section' })

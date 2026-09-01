@@ -2,10 +2,9 @@
 import {
   MUNICIPIOS_COUNT,
   MUNICIPIOS_TEXTO,
-  PROXIMOS_TEXTO,
 } from '#/data/municipios'
 
-const DONDE_SE_USA = `Revi está en producción en ${MUNICIPIOS_COUNT} municipios de Chile: ${MUNICIPIOS_TEXTO}. Además, ${PROXIMOS_TEXTO} están en proceso de implementación. La CChC proyecta llegar a 22 municipios durante 2026 y a 75 en 2027.`
+const DONDE_SE_USA = `Revi está en producción en ${MUNICIPIOS_COUNT} municipios de Chile: ${MUNICIPIOS_TEXTO}.`
 
 export const homeSchema = {
   '@context': 'https://schema.org',
@@ -123,6 +122,7 @@ export const reviSchema = {
   '@graph': [
     {
       '@type': 'Article',
+      '@id': 'https://bipbop.cl/revi#article',
       headline:
         'Qué es Revi: el asistente con IA de la CChC para permisos de edificación',
       inLanguage: 'es-CL',
@@ -169,10 +169,22 @@ export const reviSchema = {
           url: 'https://bipbop.cl/brand/generated/og.png',
         },
       },
-      mainEntityOfPage: 'https://bipbop.cl/revi',
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': 'https://bipbop.cl/revi',
+      },
       datePublished: '2026-05-17',
-      dateModified: '2026-08-18',
-      image: 'https://bipbop.cl/brand/projects/revi/og-revi.jpg',
+      dateModified: '2026-09-01',
+      image: {
+        '@type': 'ImageObject',
+        '@id': 'https://bipbop.cl/revi#primaryimage',
+        url: 'https://bipbop.cl/brand/projects/revi/og-revi.jpg',
+        contentUrl: 'https://bipbop.cl/brand/projects/revi/og-revi.jpg',
+        width: 1200,
+        height: 630,
+        caption:
+          'Revi CChC, asistente con IA para permisos de edificación en Chile',
+      },
     },
     {
       '@type': 'DefinedTermSet',
@@ -206,6 +218,7 @@ export const reviSchema = {
     },
     {
       '@type': 'SoftwareApplication',
+      '@id': 'https://bipbop.cl/revi#software',
       name: 'Revi',
       alternateName: ['Revi CChC', 'ia-revi'],
       url: 'https://app.ia-revi.cl/',
@@ -220,6 +233,9 @@ export const reviSchema = {
         url: 'https://www.cchc.cl',
       },
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'CLP' },
+      areaServed: { '@type': 'Country', name: 'Chile' },
+      inLanguage: 'es-CL',
+      isAccessibleForFree: true,
     },
     {
       '@type': 'FAQPage',
