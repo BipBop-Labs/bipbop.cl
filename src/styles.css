@@ -321,6 +321,19 @@
     fill: var(--color-success);
     animation: bop-settle 0.78s var(--ease-out-soft) 1.38s both;
   }
+  .wordmark svg .wordmark-penguin-layout,
+  .wordmark svg .wordmark-lettering-layout {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  @media (max-width: 560px) {
+    .wordmark svg .wordmark-penguin-layout {
+      transform: translate(190%, 35%) scale(1.05);
+    }
+    .wordmark svg .wordmark-lettering-layout {
+      transform: translate(-17%, 76%);
+    }
+  }
   .wordmark svg .wordmark-penguin {
     transform-box: fill-box;
     transform-origin: 48% 78%;
