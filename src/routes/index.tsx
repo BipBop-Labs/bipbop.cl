@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { Wordmark } from '#/components/wordmark'
 import { capture } from '#/lib/analytics'
@@ -126,6 +127,8 @@ function Home() {
           </section>
 
           <About />
+
+          <Team />
 
           <Contact />
 
@@ -460,7 +463,7 @@ function About() {
     <section className="mb-20 grid grid-cols-[1.7fr_1fr] gap-12 max-[720px]:grid-cols-1 max-[720px]:gap-8 max-[560px]:mb-14">
       <div>
         <h2 className={SECTION_HEAD}>
-          <span>{t('Quiénes estamos detrás', "Who's behind this")}</span>
+          <span>{t('El estudio', 'The studio')}</span>
         </h2>
         <div className="max-w-[56ch] text-base leading-[1.7] text-ink-2 [&_p+p]:mt-4">
           <p>
@@ -501,6 +504,251 @@ function About() {
           </MetaRow>
         </dl>
       </aside>
+    </section>
+  )
+}
+
+const TEAM = [
+  {
+    name: 'Juan Vargas',
+    photo: '/brand/team/juan.webp',
+    role: ['Fundador', 'Founder'],
+    external: false,
+    url: 'https://v4rgas.com',
+    host: 'v4rgas.com',
+  },
+  {
+    name: 'Diego Valenzuela',
+    photo: '/brand/team/diego.webp',
+    role: ['Ingeniero de software', 'Software engineer'],
+    external: false,
+    url: 'https://datadiego.com',
+    host: 'datadiego.com',
+  },
+  {
+    name: 'Emerson Salazar',
+    photo: '/brand/team/emerson.webp',
+    role: ['Ingeniero de software', 'Software engineer'],
+    external: false,
+    url: 'https://emersoftware.cl',
+    host: 'emersoftware.cl',
+  },
+  {
+    name: 'Gonzalo Saavedra',
+    photo: '/brand/team/gonzalo.webp',
+    role: ['Ingeniero de software', 'Software engineer'],
+    url: 'https://github.com/gonzalo-saavedra-m/',
+    host: 'gonzalo.saavedra',
+    external: true,
+  },
+] as const
+
+type Person = (typeof TEAM)[number]
+
+const FLIP = { duration: 550, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' } as const
+
+/**
+ * Square tiles; click one and it expands in place to show the person's site,
+ * while the other tiles slide around it (FLIP: measure, change, animate back).
+ */
+function Team() {
+  const t = useT()
+  const [open, setOpen] = useState<Person | null>(null)
+  const [settled, setSettled] = useState(false)
+  const tiles = useRef(new Map<string, HTMLElement>())
+  const before = useRef(new Map<string, DOMRect>())
+
+  const toggle = (p: Person) => {
+    before.current = new Map(
+      [...tiles.current].map(([k, el]) => [k, el.getBoundingClientRect()]),
+    )
+    setSettled(false)
+    setOpen((cur) => (cur?.host === p.host ? null : p))
+  }
+
+  useLayoutEffect(() => {
+    if (before.current.size === 0) return
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const anims: Animation[] = []
+    for (const [k, el] of tiles.current) {
+      const a = before.current.get(k)
+      if (!a) continue
+      const b = el.getBoundingClientRect()
+      const dx = a.left - b.left
+      const dy = a.top - b.top
+      const resized = a.width !== b.width || a.height !== b.height
+      if (!resized && !dx && !dy) continue
+      if (reduced) continue
+      const card = el.firstElementChild as HTMLElement
+      anims.push(
+        el.animate(
+          [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }],
+          FLIP,
+        ),
+      )
+      if (resized)
+        anims.push(
+          card.animate(
+            [
+              { width: `${a.width}px`, height: `${a.height}px` },
+              { width: `${b.width}px`, height: `${b.height}px` },
+            ],
+            FLIP,
+          ),
+        )
+    }
+    before.current = new Map()
+    Promise.all(anims.map((x) => x.finished)).then(() => setSettled(true))
+    if (anims.length === 0) setSettled(true)
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && toggle(open)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  return (
+    <section className="mb-20 scroll-mt-8 max-[560px]:mb-14" id="team">
+      <h2 className={SECTION_HEAD}>
+        <span>{t('Quiénes somos', 'Who we are')}</span>
+      </h2>
+      <ul className="m-0 grid list-none grid-cols-4 gap-4 p-0 max-[720px]:grid-cols-2">
+        {TEAM.map((p) => {
+          const active = open?.host === p.host
+          const card = `group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-[6px] border border-line bg-surface p-0 text-left text-inherit no-underline transition-[border-color,box-shadow] duration-200 hover:border-line-strong hover:shadow-[0_10px_30px_color-mix(in_srgb,var(--color-ink)_8%,transparent)]`
+          const label = (
+            <>
+              <img
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                src={p.photo}
+                alt=""
+                width={320}
+                height={320}
+                loading="lazy"
+                decoding="async"
+              />
+              <span className="absolute inset-x-0 bottom-0 flex flex-col gap-[0.2rem] bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.55)_35%,rgba(0,0,0,0.88)_100%)] px-4 pt-16 pb-4 text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] max-[560px]:px-3 max-[560px]:pb-3">
+                <span className="text-[0.62rem] font-semibold tracking-[0.15em] text-white/80 uppercase">
+                  {t(p.role[0], p.role[1])}
+                </span>
+                <span className="text-[clamp(1.05rem,2vw,1.4rem)] leading-[1.15] font-semibold">
+                  {p.name}
+                </span>
+                <span className="truncate text-[0.68rem] tracking-[0.06em] text-white/80">
+                  {p.host}
+                </span>
+              </span>
+            </>
+          )
+          return (
+            <li
+              key={p.host}
+              ref={(el) => {
+                if (el) tiles.current.set(p.host, el)
+                else tiles.current.delete(p.host)
+              }}
+              className={
+                active
+                  ? 'col-span-4 h-[72vh] min-h-[420px] max-[720px]:col-span-2'
+                  : 'aspect-square'
+              }
+            >
+              {active ? (
+                <div className={`${card} !cursor-default`}>
+                  <div className="flex items-center gap-[0.35rem] border-b border-line bg-subtle px-3 py-2">
+                    <button
+                      type="button"
+                      aria-label={t('Cerrar', 'Close')}
+                      className="size-3 cursor-pointer rounded-full border-0 bg-clay-500 p-0 transition-opacity hover:opacity-70"
+                      onClick={() => toggle(p)}
+                    />
+                    <span className="size-3 rounded-full bg-line-strong" />
+                    <span className="size-3 rounded-full bg-line-strong" />
+                    <span className="ml-2 min-w-0 flex-1 truncate rounded-[2px] bg-page px-2 py-[2px] text-[0.68rem] tracking-[0.06em] text-ink-3">
+                      {p.host}
+                    </span>
+                    <a
+                      className="text-[0.68rem] tracking-[0.06em] text-ink-2 no-underline hover:text-success"
+                      href={p.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => capture('team_site_clicked', { host: p.host })}
+                    >
+                      {t('abrir ↗', 'open ↗')}
+                    </a>
+                  </div>
+                  {p.external ? (
+                    <div
+                      className={`flex flex-1 flex-col items-center justify-center gap-5 bg-page px-6 text-center transition-opacity duration-300 ${
+                        settled ? 'opacity-100' : 'opacity-0'
+                      }`}
+                    >
+                      <p className="font-mono text-[0.7rem] tracking-[0.15em] text-ink-3 uppercase">
+                        404 · {t('página no encontrada', 'page not found')}
+                      </p>
+                      <p className="max-w-[34ch] text-[clamp(1.3rem,2.6vw,1.9rem)] leading-[1.25] text-ink">
+                        {t(
+                          'Gonzalo todavía no tiene página. Está ocupado haciendo que las de los demás funcionen.',
+                          "Gonzalo doesn't have a page yet. He's busy making everyone else's work.",
+                        )}
+                      </p>
+                      <p className="text-[0.95rem] text-ink-2">
+                        {t('Mientras tanto: ', 'In the meantime: ')}
+                        <a
+                          className={PROSE_LINK}
+                          href={p.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => capture('team_site_clicked', { host: p.host })}
+                        >
+                          GitHub
+                        </a>
+                        {' · '}
+                        <a
+                          className={PROSE_LINK}
+                          href="https://www.linkedin.com/in/gonzalosaavedram/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => capture('team_site_clicked', { host: p.host })}
+                        >
+                          LinkedIn
+                        </a>
+                      </p>
+                      <p className="font-mono text-[0.8rem] text-success">
+                        {t('página en construcción', 'page under construction')}
+                        <span className="animate-blink">_</span>
+                      </p>
+                    </div>
+                  ) : (
+                    <iframe
+                      className={`block w-full flex-1 border-0 bg-page transition-opacity duration-300 ${
+                        settled ? 'opacity-100' : 'opacity-0'
+                      }`}
+                      src={p.url}
+                      title={`${p.name} · ${p.host}`}
+                      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className={card}
+                  onClick={() => {
+                    toggle(p)
+                    capture('team_site_opened', { host: p.host })
+                  }}
+                >
+                  {label}
+                </button>
+              )}
+            </li>
+          )
+        })}
+      </ul>
     </section>
   )
 }
