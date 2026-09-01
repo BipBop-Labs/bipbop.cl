@@ -185,7 +185,7 @@ function Hero() {
       <Wordmark />
 
       <p
-        className={`motion-safe-opacity mt-8 max-w-[42ch] animate-rise text-[clamp(1.25rem,2.4vw,1.6rem)] leading-[1.4] font-semibold text-ink opacity-0 [animation-delay:1.8s] ${glow}`}
+        className={`motion-safe-opacity mt-8 max-w-[42ch] animate-rise text-[clamp(1.25rem,2.4vw,1.6rem)] leading-[1.4] font-semibold text-ink opacity-0 [animation-delay:1.4s] ${glow}`}
       >
         <em className="text-success not-italic">
           {t('Software hecho con cariño', 'Thoughtful software')}
@@ -196,7 +196,7 @@ function Hero() {
         )}
       </p>
 
-      <div className="motion-safe-opacity mt-8 flex animate-rise flex-wrap justify-center gap-3 opacity-0 [animation-delay:1.95s]">
+      <div className="motion-safe-opacity mt-8 flex animate-rise flex-wrap justify-center gap-3 opacity-0 [animation-delay:1.55s]">
         <a
           className="inline-flex min-h-12 cursor-pointer items-center gap-[0.55rem] rounded-[2px] border border-line bg-[color-mix(in_srgb,var(--color-ink)_6%,transparent)] px-[1.05rem] py-[0.7rem] text-[0.95rem] font-semibold text-ink no-underline transition-colors duration-200 hover:border-line-strong hover:bg-subtle active:bg-line"
           href="#work"
