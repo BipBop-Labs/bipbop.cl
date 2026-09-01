@@ -512,7 +512,7 @@ const TEAM = [
   {
     name: 'Juan Vargas',
     photo: '/brand/team/juan.webp',
-    role: ['Fundador', 'Founder'],
+    role: ['Founder', 'Founder'],
     external: false,
     url: 'https://v4rgas.com',
     host: 'v4rgas.com',
@@ -520,7 +520,7 @@ const TEAM = [
   {
     name: 'Diego Valenzuela',
     photo: '/brand/team/diego.webp',
-    role: ['Ingeniero de software', 'Software engineer'],
+    role: ['SWE', 'SWE'],
     external: false,
     url: 'https://datadiego.com',
     host: 'datadiego.com',
@@ -528,7 +528,7 @@ const TEAM = [
   {
     name: 'Emerson Salazar',
     photo: '/brand/team/emerson.webp',
-    role: ['Ingeniero de software', 'Software engineer'],
+    role: ['SWE', 'SWE'],
     external: false,
     url: 'https://emersoftware.cl',
     host: 'emersoftware.cl',
@@ -536,7 +536,7 @@ const TEAM = [
   {
     name: 'Gonzalo Saavedra',
     photo: '/brand/team/gonzalo.webp',
-    role: ['Ingeniero de software', 'Software engineer'],
+    role: ['SWE', 'SWE'],
     url: 'https://github.com/gonzalo-saavedra-m/',
     host: 'gonzalo.saavedra',
     external: true,
