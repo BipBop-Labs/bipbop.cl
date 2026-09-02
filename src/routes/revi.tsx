@@ -10,25 +10,25 @@ import { reviSchema } from '#/data/schema'
 import { REVI_PRESS } from '#/data/revi-press'
 
 const DESCRIPTION =
-  'Revi CChC es el asistente con IA de la Cámara Chilena de la Construcción para permisos de edificación en Chile: lee planos y guía a solicitantes y a la DOM.'
+  'Cómo BipBop Labs desarrolló Revi junto a la Cámara Chilena de la Construcción: un asistente con IA que lee planos y guía a solicitantes y a la DOM en permisos de edificación.'
+const TITLE =
+  'Revi · IA para permisos de edificación · Caso de BipBop Labs junto a la CChC'
 
 export const Route = createFileRoute('/revi')({
   head: () => ({
     meta: [
       {
-        title: 'Revi CChC · Asistente IA para permisos de edificación en Chile',
+        title: TITLE,
       },
       { name: 'description', content: DESCRIPTION },
       { property: 'og:type', content: 'article' },
       {
         property: 'og:title',
-        content:
-          'Revi CChC · Qué es y cómo funciona el asistente IA para permisos de edificación',
+        content: TITLE,
       },
       {
         property: 'og:description',
-        content:
-          'Revi CChC es el asistente con IA de la Cámara Chilena de la Construcción para permisos de edificación en Chile. Disponible en app.ia-revi.cl.',
+        content: DESCRIPTION,
       },
       { property: 'og:url', content: 'https://bipbop.cl/revi' },
       {
@@ -50,12 +50,11 @@ export const Route = createFileRoute('/revi')({
       { name: 'twitter:card', content: 'summary_large_image' },
       {
         name: 'twitter:title',
-        content: 'Revi CChC · Asistente IA para permisos de edificación',
+        content: TITLE,
       },
       {
         name: 'twitter:description',
-        content:
-          'Revi CChC es el asistente con IA de la Cámara Chilena de la Construcción. Lee planos y guía a solicitantes y DOM por la normativa.',
+        content: DESCRIPTION,
       },
       {
         name: 'twitter:image',
@@ -215,19 +214,20 @@ function Revi() {
         className="mb-5 font-display text-[clamp(2.2rem,5vw,3.4rem)] leading-[1.1] font-normal tracking-[-0.01em]"
         itemProp="headline"
       >
-        Qué es Revi <em className="text-success italic">de la CChC</em>
+        Revi: IA para permisos de edificación,{' '}
+        <em className="text-success italic">desarrollada junto a la CChC</em>
       </h1>
 
       <p
         className="mb-10 max-w-[60ch] text-[1.2rem] leading-[1.55] font-normal text-ink-2"
         itemProp="description"
       >
-        <strong>Revi</strong> (también conocido como <strong>Revi CChC</strong>{' '}
-        o <strong>ia-revi</strong>) es el asistente con inteligencia artificial
-        de la <strong>Cámara Chilena de la Construcción (CChC)</strong> para{' '}
+        En <strong>BipBop Labs</strong> desarrollamos <strong>Revi</strong>{' '}
+        junto a la <strong>Cámara Chilena de la Construcción (CChC)</strong>:
+        una plataforma de asistentes con inteligencia artificial que ayuda a
+        solicitantes y a las Direcciones de Obras Municipales a revisar{' '}
         <strong>permisos de edificación en Chile</strong>. Lee planos
-        arquitectónicos y documentos, y guía a solicitantes y a revisores
-        municipales por la normativa, juntos.
+        arquitectónicos y documentos, y guía a ambos lados por la normativa.
       </p>
 
       <p className={P}>
@@ -268,12 +268,48 @@ function Revi() {
       >
         <p className="mb-2 font-semibold">En esta página</p>
         <ul className="grid grid-cols-2 gap-x-6 gap-y-2 max-[560px]:grid-cols-1">
+          <li><a className={A} href="#nuestro-trabajo">Nuestro trabajo en Revi</a></li>
           <li><a className={A} href="#para-que-sirve">Para qué sirve</a></li>
           <li><a className={A} href="#como-se-usa">Cómo se usa</a></li>
           <li><a className={A} href="#donde-se-usa">Municipios disponibles</a></li>
           <li><a className={A} href="#faq">Preguntas frecuentes</a></li>
         </ul>
       </nav>
+
+      <h2 className={H2} id="nuestro-trabajo">Nuestro trabajo en Revi</h2>
+      <p className={P}>
+        BipBop Labs es el equipo de ingeniería de software detrás de Revi.
+        Trabajamos junto al equipo de la CChC en el diseño, el desarrollo, la
+        operación y la evolución del producto: desde el primer piloto en una
+        municipalidad hasta la plataforma que hoy corre en{' '}
+        {MUNICIPIOS_COUNT} municipios. La CChC impulsa la iniciativa, define
+        prioridades y lleva la relación con las municipalidades; nosotros
+        construimos y mantenemos la tecnología.
+      </p>
+      <ul className={UL}>
+        <li>
+          <strong>Lectura de expedientes.</strong> Modelos que leen planos
+          arquitectónicos, memorias y certificados, y los cruzan con la
+          normativa aplicable (LGUC, OGUC y planes reguladores comunales).
+        </li>
+        <li>
+          <strong>Dos asistentes, dos roles.</strong> Diseñamos Clara para
+          quien ingresa un permiso y Norman para quien lo revisa en la DOM,
+          porque los dos lados del trámite necesitan respuestas distintas
+          sobre el mismo expediente.
+        </li>
+        <li>
+          <strong>Trabajo con revisores reales.</strong> Cada municipio nuevo
+          se incorpora con sus propios criterios y ordenanzas, y ajustamos el
+          sistema con los revisores municipales antes de ponerlo en
+          producción.
+        </li>
+        <li>
+          <strong>Operación continua.</strong> Somos responsables de la
+          plataforma en producción: infraestructura, seguridad, monitoreo y
+          las mejoras que salen de lo que vemos en uso.
+        </li>
+      </ul>
 
       <h2 className={H2} id="para-que-sirve">¿Para qué sirve Revi?</h2>
       <p className={P}>
@@ -302,7 +338,7 @@ function Revi() {
         .
       </p>
 
-      <h2 className={H2} id="como-se-usa">¿Cómo se usa Revi CChC?</h2>
+      <h2 className={H2} id="como-se-usa">¿Cómo se usa Revi?</h2>
       <p className={P}>
         Para usar Revi, entra a{' '}
         <AppLink location="body">app.ia-revi.cl</AppLink> y elige el asistente
@@ -389,30 +425,6 @@ function Revi() {
           </strong>{' '}
           reglamento que detalla la aplicación de la LGUC, con requisitos
           técnicos y de procedimiento.
-        </li>
-      </ul>
-
-      <h2 className={H2}>Otros nombres con que se busca Revi</h2>
-      <p className={P}>
-        Revi aparece referida con varios nombres en buscadores y conversaciones
-        del rubro. Todos refieren a lo mismo: el asistente con IA de la CChC
-        para permisos de edificación en Chile.
-      </p>
-      <ul className={UL}>
-        <li>
-          <strong>Revi CChC</strong> (asistente de la Cámara Chilena de la
-          Construcción)
-        </li>
-        <li>
-          <strong>ia-revi</strong> o <strong>ia revi</strong> (por el dominio
-          app.ia-revi.cl)
-        </li>
-        <li>
-          <strong>Revi IA</strong> o <strong>Revi de la CChC</strong>
-        </li>
-        <li>
-          <strong>Clara</strong> y <strong>Norman</strong> (los dos asistentes
-          que conforman Revi)
         </li>
       </ul>
 

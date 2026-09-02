@@ -46,8 +46,9 @@ export function Wordmark() {
   }, [])
 
   return (
-    <h1
+    <div
       className="wordmark motion-safe-opacity block w-[82%] max-w-[620px] text-ink"
+      role="img"
       aria-label="BipBop Labs"
     >
       <svg ref={svg} viewBox="0 0 590 140" role="img" aria-hidden="true">
@@ -77,6 +78,6 @@ export function Wordmark() {
             </text>
         </g>
       </svg>
-    </h1>
+    </div>
   )
 }

@@ -6,49 +6,55 @@ import {
 
 const DONDE_SE_USA = `Revi está en producción en ${MUNICIPIOS_COUNT} municipios de Chile: ${MUNICIPIOS_TEXTO}.`
 
+const ORGANIZATION = {
+  '@type': 'Organization',
+  '@id': 'https://bipbop.cl/#org',
+  name: 'BipBop Labs',
+  url: 'https://bipbop.cl',
+  logo: 'https://bipbop.cl/brand/generated/social/github-avatar.png',
+  image: 'https://bipbop.cl/brand/generated/og.png',
+  email: 'juan@bipbop.cl',
+  description:
+    'Estudio de software chileno especializado en sistemas con IA, herramientas internas y plataformas operacionales.',
+  founder: {
+    '@type': 'Person',
+    name: 'Juan Vargas',
+    url: 'https://v4rgas.com',
+    sameAs: ['https://github.com/v4rgas', 'https://linkedin.com/in/v4rgas'],
+  },
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Santiago',
+    addressCountry: 'CL',
+  },
+  sameAs: ['https://github.com/v4rgas', 'https://linkedin.com/in/v4rgas'],
+  knowsAbout: [
+    'Desarrollo de software a medida',
+    'Inteligencia artificial aplicada',
+    'Permisos de edificación en Chile',
+  ],
+  areaServed: { '@type': 'Country', name: 'Chile' },
+}
+
+const ORG_REF = { '@id': 'https://bipbop.cl/#org' }
+
 export const homeSchema = {
   '@context': 'https://schema.org',
   '@graph': [
-    {
-      '@type': 'Organization',
-      '@id': 'https://bipbop.cl/#org',
-      name: 'BipBop Labs',
-      url: 'https://bipbop.cl',
-      logo: 'https://bipbop.cl/brand/generated/og.png',
-      email: 'juan@bipbop.cl',
-      description:
-        'Estudio de software chileno especializado en sistemas con IA, herramientas internas y plataformas operacionales.',
-      founder: {
-        '@type': 'Person',
-        name: 'Juan Vargas',
-        url: 'https://v4rgas.com',
-        sameAs: ['https://github.com/v4rgas', 'https://linkedin.com/in/v4rgas'],
-      },
-      address: {
-        '@type': 'PostalAddress',
-        addressLocality: 'Santiago',
-        addressCountry: 'CL',
-      },
-      sameAs: ['https://github.com/v4rgas', 'https://linkedin.com/in/v4rgas'],
-    },
+    ORGANIZATION,
     {
       '@type': 'SoftwareApplication',
-      '@id': 'https://bipbop.cl/#revi',
+      '@id': 'https://bipbop.cl/revi#software',
       name: 'Revi',
-      alternateName: ['Revi CChC', 'ia-revi', 'Revi IA'],
       url: 'https://app.ia-revi.cl/',
-      applicationCategory: 'BusinessApplication',
-      operatingSystem: 'Web',
-      description:
-        'Revi es un asistente con inteligencia artificial que facilita los permisos de edificación en Chile. Lee planos arquitectónicos y documentos, y guía a solicitantes y a revisores de las Direcciones de Obras Municipales (DOM) por la normativa. Cuenta con dos asistentes: Clara, para solicitantes, y Norman, para revisores municipales.',
+      creator: ORG_REF,
       publisher: {
         '@type': 'Organization',
         name: 'Cámara Chilena de la Construcción',
         alternateName: 'CChC',
         url: 'https://www.cchc.cl',
       },
-      offers: { '@type': 'Offer', price: '0', priceCurrency: 'CLP' },
-      areaServed: { '@type': 'Country', name: 'Chile' },
+      subjectOf: { '@id': 'https://bipbop.cl/revi#article' },
     },
     {
       '@type': 'BreadcrumbList',
@@ -69,106 +75,41 @@ export const homeSchema = {
       publisher: { '@id': 'https://bipbop.cl/#org' },
       inLanguage: ['es-CL', 'en'],
     },
-    {
-      '@type': 'FAQPage',
-      mainEntity: [
-        {
-          '@type': 'Question',
-          name: '¿Qué es Revi?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'Revi es un asistente con inteligencia artificial creado para la Cámara Chilena de la Construcción (CChC) que hace mucho menos doloroso obtener permisos de edificación en Chile. Lee planos y documentos, y guía a solicitantes y a revisores municipales por la normativa. Está disponible en app.ia-revi.cl.',
-          },
-        },
-        {
-          '@type': 'Question',
-          name: '¿Dónde se usa Revi?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: DONDE_SE_USA,
-          },
-        },
-        {
-          '@type': 'Question',
-          name: '¿Dónde accedo a Revi?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'Revi está disponible en app.ia-revi.cl y se accede desde cualquier navegador. Es gratuito para usuarios en municipios con convenio con la CChC.',
-          },
-        },
-        {
-          '@type': 'Question',
-          name: '¿Cuánto cuesta Revi?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'Revi es gratuito para todos los usuarios. Actualmente solo se apoya a las municipalidades con convenio con la Cámara Chilena de la Construcción (CChC).',
-          },
-        },
-        {
-          '@type': 'Question',
-          name: '¿Quiénes son Clara y Norman?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'Clara y Norman son los dos asistentes de Revi. Clara ayuda a los solicitantes de permisos de edificación, y Norman ayuda a los revisores de las Direcciones de Obras Municipales (DOM) a revisar expedientes contra la normativa.',
-          },
-        },
-      ],
-    },
   ],
 }
 
 export const reviSchema = {
   '@context': 'https://schema.org',
   '@graph': [
+    ORGANIZATION,
     {
       '@type': 'Article',
       '@id': 'https://bipbop.cl/revi#article',
       headline:
-        'Qué es Revi: el asistente con IA de la CChC para permisos de edificación',
+        'Revi: IA para permisos de edificación, desarrollada por BipBop Labs junto a la CChC',
       inLanguage: 'es-CL',
-      articleSection: 'Producto',
+      articleSection: 'Casos',
       keywords:
-        'Revi, Revi CChC, ia-revi, app.ia-revi.cl, Cámara Chilena de la Construcción, permisos de edificación Chile, LGUC, OGUC, DOM, Clara Revi, Norman Revi',
+        'Revi, Cámara Chilena de la Construcción, permisos de edificación Chile, inteligencia artificial, DOM, BipBop Labs',
       about: [
         { '@type': 'Thing', name: 'Permisos de edificación en Chile' },
         { '@type': 'Thing', name: 'Direcciones de Obras Municipales (DOM)' },
       ],
       author: [
-        {
-          '@type': 'Organization',
-          name: 'BipBop Labs',
-          url: 'https://bipbop.cl',
-          sameAs: [
-            'https://github.com/v4rgas',
-            'https://linkedin.com/in/v4rgas',
-          ],
-        },
+        ORG_REF,
         {
           '@type': 'Person',
           name: 'Juan Vargas',
           url: 'https://v4rgas.com',
           jobTitle: 'Founder, BipBop Labs',
-          worksFor: {
-            '@type': 'Organization',
-            name: 'BipBop Labs',
-            url: 'https://bipbop.cl',
-          },
+          worksFor: ORG_REF,
           sameAs: [
             'https://github.com/v4rgas',
             'https://linkedin.com/in/v4rgas',
           ],
         },
       ],
-      publisher: {
-        '@type': 'Organization',
-        name: 'BipBop Labs',
-        url: 'https://bipbop.cl',
-        sameAs: ['https://github.com/v4rgas', 'https://linkedin.com/in/v4rgas'],
-        logo: {
-          '@type': 'ImageObject',
-          url: 'https://bipbop.cl/brand/generated/og.png',
-        },
-      },
+      publisher: ORG_REF,
       mainEntityOfPage: {
         '@type': 'WebPage',
         '@id': 'https://bipbop.cl/revi',
@@ -220,10 +161,12 @@ export const reviSchema = {
       '@type': 'SoftwareApplication',
       '@id': 'https://bipbop.cl/revi#software',
       name: 'Revi',
-      alternateName: ['Revi CChC', 'ia-revi'],
+      alternateName: ['Revi CChC', 'ia-revi', 'Revi IA'],
       url: 'https://app.ia-revi.cl/',
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web',
+      creator: ORG_REF,
+      maintainer: ORG_REF,
       description:
         'Asistente con IA para permisos de edificación en Chile. Lee planos arquitectónicos y documentos, y guía a solicitantes y revisores municipales por la normativa.',
       publisher: {

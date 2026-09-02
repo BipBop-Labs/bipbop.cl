@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { Wordmark } from '#/components/wordmark'
@@ -13,22 +13,18 @@ import {
 import { useLang, useT } from '#/lib/lang'
 
 const DESCRIPTION =
-  'Software hecho con cariño, pensado contigo y construido a tu lado. Un estudio pequeño para empresas a las que les importan los detalles.'
+  'Estudio de software e inteligencia artificial en Santiago, Chile. Desarrollamos Revi junto a la Cámara Chilena de la Construcción. Software hecho con cariño, pensado contigo y construido a tu lado.'
+const TITLE = 'BipBop Labs · Estudio de software e IA a medida en Chile'
 
 export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
-      { title: 'BipBop Labs · software hecho con cariño · Santiago, CL' },
+      { title: TITLE },
       { name: 'description', content: DESCRIPTION },
-      {
-        name: 'keywords',
-        content:
-          'BipBop Labs, software con IA Chile, Juan Vargas, Santiago Chile, estudio software, Revi, Revi CChC, qué es Revi, ia-revi, app.ia-revi.cl, Cámara Chilena de la Construcción, permisos de edificación Chile, Clara Revi, Norman Revi, asistente IA construcción, DOM Chile',
-      },
       { property: 'og:type', content: 'website' },
-      { property: 'og:title', content: 'BipBop Labs' },
+      { property: 'og:title', content: TITLE },
       { property: 'og:description', content: DESCRIPTION },
-      { property: 'og:url', content: 'https://bipbop.cl' },
+      { property: 'og:url', content: 'https://bipbop.cl/' },
       {
         property: 'og:image',
         content: 'https://bipbop.cl/brand/generated/og.png',
@@ -43,7 +39,7 @@ export const Route = createFileRoute('/')({
       { property: 'og:locale', content: 'es_CL' },
       { property: 'og:locale:alternate', content: 'en_US' },
       { name: 'twitter:card', content: 'summary_large_image' },
-      { name: 'twitter:title', content: 'BipBop Labs' },
+      { name: 'twitter:title', content: TITLE },
       { name: 'twitter:description', content: DESCRIPTION },
       {
         name: 'twitter:image',
@@ -55,7 +51,7 @@ export const Route = createFileRoute('/')({
       },
     ],
     links: [
-      { rel: 'canonical', href: 'https://bipbop.cl' },
+      { rel: 'canonical', href: 'https://bipbop.cl/' },
       { rel: 'alternate', hrefLang: 'es-CL', href: 'https://bipbop.cl/' },
       { rel: 'alternate', hrefLang: 'x-default', href: 'https://bipbop.cl/' },
     ],
@@ -187,17 +183,17 @@ function Hero() {
     <section className="hero-skyline relative mb-0 flex min-h-screen flex-col items-center justify-center pb-8 text-center [&>*]:relative [&>*]:z-[2]">
       <Wordmark />
 
-      <p
+      <h1
         className={`motion-safe-opacity mt-8 max-w-[42ch] animate-rise text-[clamp(1.25rem,2.4vw,1.6rem)] leading-[1.4] font-semibold text-ink opacity-0 [animation-delay:1.4s] ${glow}`}
       >
         <em className="text-success not-italic">
-          {t('Software hecho con cariño', 'Thoughtful software')}
+          {t('Software e IA a medida', 'Custom software and AI')}
         </em>
         {t(
-          ', pensado contigo y construido a tu lado.',
-          ', shaped with you and built by your side.',
+          ', hecho con cariño, pensado contigo y construido a tu lado.',
+          ', made with care, shaped with you and built by your side.',
         )}
-      </p>
+      </h1>
 
       <div className="motion-safe-opacity mt-8 flex animate-rise flex-wrap justify-center gap-3 opacity-0 [animation-delay:1.55s]">
         <a
@@ -347,14 +343,14 @@ function ReviCard() {
         </div>
 
         <p className="mt-8 border-t border-line pt-6">
-          <a
+          <Link
             className={FEATURED_CTA}
-            href="/revi"
-            title={t('Qué es Revi CChC', 'About Revi CChC')}
+            to="/revi"
+            title={t('Cómo desarrollamos Revi', 'How we built Revi')}
             onClick={onReviLink}
           >
             {t('Conoce el caso Revi', 'Explore the Revi case study')}
-          </a>
+          </Link>
         </p>
       </div>
     </article>
