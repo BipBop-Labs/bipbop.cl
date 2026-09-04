@@ -504,7 +504,7 @@ function About() {
   )
 }
 
-const TEAM = [
+export const TEAM = [
   {
     name: 'Juan Vargas',
     photo: '/brand/team/juan.webp',
@@ -533,9 +533,9 @@ const TEAM = [
     name: 'Gonzalo Saavedra',
     photo: '/brand/team/gonzalo.webp',
     role: ['SWE', 'SWE'],
-    url: 'https://github.com/gonzalo-saavedra-m/',
-    host: 'gonzalo.saavedra',
-    external: true,
+    url: 'https://gonzalodev.cl',
+    host: 'gonzalodev.cl',
+    external: false,
   },
 ] as const
 
