@@ -550,68 +550,6 @@ const ZOOM_ART = {
   transformOrigin: '40.9% 34.7%',
 }
 const ZOOM_SCREEN = { left: '15.8%', top: '17.5%', width: '68.5%', height: '65%' }
-const BAY = { x: 0.86, y: 0.78 }
-const FLIGHT = 900
-
-/**
- * Cassette that pops out of the clicked tile, arcs over the desk, tilts and
- * gets shoved into the deck's bay — then the machine takes the hit.
- */
-function flyCassette(from: DOMRect, machine: DOMRect, deck: HTMLElement) {
-  const el = document.createElement('div')
-  el.setAttribute('aria-hidden', 'true')
-  el.style.cssText = `position:fixed;z-index:60;pointer-events:none;width:76px;height:48px;border-radius:4px;background:linear-gradient(180deg,#3a3835,#221f1d);border:1px solid #14120f;box-shadow:0 10px 26px rgba(0,0,0,.4);left:${from.left + from.width / 2 - 38}px;top:${from.top + from.height / 2 - 24}px;display:flex;align-items:center;justify-content:center`
-  el.innerHTML =
-    '<span style="width:56px;height:24px;border-radius:2px;background:#d8d1c1;display:flex;align-items:center;justify-content:center;gap:12px"><span style="width:11px;height:11px;border-radius:50%;background:#2b2a28"></span><span style="width:11px;height:11px;border-radius:50%;background:#2b2a28"></span></span>'
-  document.body.append(el)
-
-  const dx = machine.left + machine.width * BAY.x - (from.left + from.width / 2)
-  const dy = machine.top + machine.height * BAY.y - (from.top + from.height / 2)
-  el.animate(
-    [
-      { offset: 0, transform: 'scale(0.4) rotate(-25deg)', opacity: 0 },
-      {
-        offset: 0.18,
-        transform: 'translateY(-40px) scale(1.15) rotate(12deg)',
-        opacity: 1,
-        easing: 'cubic-bezier(0.2, 0.9, 0.3, 1)',
-      },
-      {
-        offset: 0.62,
-        transform: `translate(${dx * 0.6}px, ${dy * 0.45 - 70}px) scale(1) rotate(190deg)`,
-        opacity: 1,
-        easing: 'cubic-bezier(0.5, 0, 0.5, 1)',
-      },
-      {
-        offset: 0.82,
-        transform: `translate(${dx}px, ${dy - 6}px) scale(0.62) rotate(360deg)`,
-        opacity: 1,
-        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      },
-      {
-        offset: 1,
-        transform: `translate(${dx}px, ${dy + 10}px) scale(0.58, 0.3) rotate(360deg)`,
-        opacity: 0,
-      },
-    ],
-    { duration: FLIGHT, fill: 'forwards' },
-  ).finished.finally(() => el.remove())
-
-  window.setTimeout(
-    () =>
-      deck.animate(
-        [
-          { transform: 'none' },
-          { transform: 'translate(1px, 3px) rotate(0.35deg)' },
-          { transform: 'translate(-1px, 1px) rotate(-0.2deg)' },
-          { transform: 'none' },
-        ],
-        { duration: 260, easing: 'ease-out' },
-      ),
-    FLIGHT * 0.84,
-  )
-}
-
 /**
  * A retro machine shows the selected person's site on its screen; the tiles
  * below stay put and only get a "loaded" marker, so nothing shifts underfoot.
@@ -629,17 +567,13 @@ function Team() {
     window.setTimeout(() => setBooting(false), 1000)
   }
 
-  const pick = (p: Person, tile: HTMLElement) => {
+  const pick = (p: Person) => {
     if (open?.host === p.host) return close()
     capture('team_site_opened', { host: p.host })
-    const deck = machine.current
-    if (!deck || window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-      return setOpen(p)
-    flyCassette(tile.getBoundingClientRect(), deck.getBoundingClientRect(), deck)
+    setOpen(p)
     setBooting(true)
-    window.setTimeout(() => setOpen(p), FLIGHT * 0.84)
     // the art's zoom runs 700ms; keep the screen dark until it has settled
-    window.setTimeout(() => setBooting(false), FLIGHT * 0.84 + 800)
+    window.setTimeout(() => setBooting(false), 800)
   }
 
   useEffect(() => {
@@ -656,7 +590,7 @@ function Team() {
       </h2>
 
       {/* Fixed-height stage: the machine swaps size inside it, the page doesn't move. */}
-      <div className="mb-10 flex h-[min(66vw,620px)] items-center justify-center">
+      <div className="mb-10 flex h-[min(66vw,620px)] items-center justify-center max-[720px]:-mx-5 max-[720px]:mb-6 max-[720px]:h-[82vw]">
         <div ref={machine} className="relative h-full overflow-hidden">
         <div
           className="absolute z-10 overflow-hidden rounded-[14px] bg-black p-[0.9%] transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
@@ -751,7 +685,7 @@ function Team() {
                     ? 'translate-x-[5px] translate-y-[6px] border-line-strong shadow-[inset_0_5px_12px_rgba(0,0,0,0.5)] brightness-[0.8]'
                     : 'shadow-[5px_6px_0_var(--color-line-strong),8px_10px_18px_color-mix(in_srgb,var(--color-ink)_14%,transparent)] hover:-translate-x-[1px] hover:-translate-y-[2px] hover:border-success hover:shadow-[6px_8px_0_var(--color-success),10px_12px_22px_color-mix(in_srgb,var(--color-ink)_18%,transparent)] active:translate-x-[5px] active:translate-y-[6px] active:shadow-[inset_0_5px_12px_rgba(0,0,0,0.5)]'
                 }`}
-                onClick={(e) => pick(p, e.currentTarget)}
+                onClick={() => pick(p)}
               >
                 <img
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
