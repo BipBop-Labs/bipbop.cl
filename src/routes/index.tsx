@@ -757,7 +757,19 @@ function OpenSource() {
   return (
     <section className="mb-20 scroll-mt-8 max-[560px]:mb-14" id="open-source">
       <h2 className={SECTION_HEAD}>
-        <span>{t('Código abierto', 'Open source')}</span>
+        {/* Enlazable: el # queda a mano para compartir la sección sola. */}
+        <a
+          className="group flex items-center gap-2 text-inherit no-underline"
+          href="#open-source"
+        >
+          <span>{t('Código abierto', 'Open source')}</span>
+          <span
+            aria-hidden="true"
+            className="font-mono text-ink-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
+          >
+            #
+          </span>
+        </a>
       </h2>
 
       <p className="mb-8 max-w-[52ch] text-[0.95rem] leading-[1.6] text-balance text-ink-2">
