@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Wordmark } from '#/components/wordmark'
 import { capture } from '#/lib/analytics'
@@ -541,66 +541,110 @@ export const TEAM = [
 
 type Person = (typeof TEAM)[number]
 
-const FLIP = { duration: 550, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' } as const
+// Screen hole and tape-bay position, measured from public/brand/computer.webp.
+const SCREEN = { left: '19.5%', top: '14.4%', width: '42.8%', height: '40.7%' }
+// Picking someone zooms the machine art in on its own screen (2.2x about the
+// screen's centre, 1.6x); the content rect is where the hole lands after that.
+const ZOOM_ART = {
+  transform: 'translate(9.1%, 15.3%) scale(1.6)',
+  transformOrigin: '40.9% 34.7%',
+}
+const ZOOM_SCREEN = { left: '15.8%', top: '17.5%', width: '68.5%', height: '65%' }
+const BAY = { x: 0.86, y: 0.78 }
+const FLIGHT = 900
 
 /**
- * Square tiles; click one and it expands in place to show the person's site,
- * while the other tiles slide around it (FLIP: measure, change, animate back).
+ * Cassette that pops out of the clicked tile, arcs over the desk, tilts and
+ * gets shoved into the deck's bay — then the machine takes the hit.
+ */
+function flyCassette(from: DOMRect, machine: DOMRect, deck: HTMLElement) {
+  const el = document.createElement('div')
+  el.setAttribute('aria-hidden', 'true')
+  el.style.cssText = `position:fixed;z-index:60;pointer-events:none;width:76px;height:48px;border-radius:4px;background:linear-gradient(180deg,#3a3835,#221f1d);border:1px solid #14120f;box-shadow:0 10px 26px rgba(0,0,0,.4);left:${from.left + from.width / 2 - 38}px;top:${from.top + from.height / 2 - 24}px;display:flex;align-items:center;justify-content:center`
+  el.innerHTML =
+    '<span style="width:56px;height:24px;border-radius:2px;background:#d8d1c1;display:flex;align-items:center;justify-content:center;gap:12px"><span style="width:11px;height:11px;border-radius:50%;background:#2b2a28"></span><span style="width:11px;height:11px;border-radius:50%;background:#2b2a28"></span></span>'
+  document.body.append(el)
+
+  const dx = machine.left + machine.width * BAY.x - (from.left + from.width / 2)
+  const dy = machine.top + machine.height * BAY.y - (from.top + from.height / 2)
+  el.animate(
+    [
+      { offset: 0, transform: 'scale(0.4) rotate(-25deg)', opacity: 0 },
+      {
+        offset: 0.18,
+        transform: 'translateY(-40px) scale(1.15) rotate(12deg)',
+        opacity: 1,
+        easing: 'cubic-bezier(0.2, 0.9, 0.3, 1)',
+      },
+      {
+        offset: 0.62,
+        transform: `translate(${dx * 0.6}px, ${dy * 0.45 - 70}px) scale(1) rotate(190deg)`,
+        opacity: 1,
+        easing: 'cubic-bezier(0.5, 0, 0.5, 1)',
+      },
+      {
+        offset: 0.82,
+        transform: `translate(${dx}px, ${dy - 6}px) scale(0.62) rotate(360deg)`,
+        opacity: 1,
+        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      },
+      {
+        offset: 1,
+        transform: `translate(${dx}px, ${dy + 10}px) scale(0.58, 0.3) rotate(360deg)`,
+        opacity: 0,
+      },
+    ],
+    { duration: FLIGHT, fill: 'forwards' },
+  ).finished.finally(() => el.remove())
+
+  window.setTimeout(
+    () =>
+      deck.animate(
+        [
+          { transform: 'none' },
+          { transform: 'translate(1px, 3px) rotate(0.35deg)' },
+          { transform: 'translate(-1px, 1px) rotate(-0.2deg)' },
+          { transform: 'none' },
+        ],
+        { duration: 260, easing: 'ease-out' },
+      ),
+    FLIGHT * 0.84,
+  )
+}
+
+/**
+ * A retro machine shows the selected person's site on its screen; the tiles
+ * below stay put and only get a "loaded" marker, so nothing shifts underfoot.
  */
 function Team() {
   const t = useT()
   const [open, setOpen] = useState<Person | null>(null)
-  const [settled, setSettled] = useState(false)
-  const tiles = useRef(new Map<string, HTMLElement>())
-  const before = useRef(new Map<string, DOMRect>())
+  const [booting, setBooting] = useState(false)
+  const machine = useRef<HTMLDivElement>(null)
 
-  const toggle = (p: Person) => {
-    before.current = new Map(
-      [...tiles.current].map(([k, el]) => [k, el.getBoundingClientRect()]),
-    )
-    setSettled(false)
-    setOpen((cur) => (cur?.host === p.host ? null : p))
+  // Eject: hide the screen, then let the art zoom back out behind the static.
+  const close = () => {
+    setBooting(true)
+    window.setTimeout(() => setOpen(null), 200)
+    window.setTimeout(() => setBooting(false), 1000)
   }
 
-  useLayoutEffect(() => {
-    if (before.current.size === 0) return
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const anims: Animation[] = []
-    for (const [k, el] of tiles.current) {
-      const a = before.current.get(k)
-      if (!a) continue
-      const b = el.getBoundingClientRect()
-      const dx = a.left - b.left
-      const dy = a.top - b.top
-      const resized = a.width !== b.width || a.height !== b.height
-      if (!resized && !dx && !dy) continue
-      if (reduced) continue
-      const card = el.firstElementChild as HTMLElement
-      anims.push(
-        el.animate(
-          [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }],
-          FLIP,
-        ),
-      )
-      if (resized)
-        anims.push(
-          card.animate(
-            [
-              { width: `${a.width}px`, height: `${a.height}px` },
-              { width: `${b.width}px`, height: `${b.height}px` },
-            ],
-            FLIP,
-          ),
-        )
-    }
-    before.current = new Map()
-    Promise.all(anims.map((x) => x.finished)).then(() => setSettled(true))
-    if (anims.length === 0) setSettled(true)
-  }, [open])
+  const pick = (p: Person, tile: HTMLElement) => {
+    if (open?.host === p.host) return close()
+    capture('team_site_opened', { host: p.host })
+    const deck = machine.current
+    if (!deck || window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+      return setOpen(p)
+    flyCassette(tile.getBoundingClientRect(), deck.getBoundingClientRect(), deck)
+    setBooting(true)
+    window.setTimeout(() => setOpen(p), FLIGHT * 0.84)
+    // the art's zoom runs 700ms; keep the screen dark until it has settled
+    window.setTimeout(() => setBooting(false), FLIGHT * 0.84 + 800)
+  }
 
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && toggle(open)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close()
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
@@ -610,137 +654,134 @@ function Team() {
       <h2 className={SECTION_HEAD}>
         <span>{t('Quiénes somos', 'Who we are')}</span>
       </h2>
+
+      {/* Fixed-height stage: the machine swaps size inside it, the page doesn't move. */}
+      <div className="mb-10 flex h-[min(66vw,620px)] items-center justify-center">
+        <div ref={machine} className="relative h-full overflow-hidden">
+        <div
+          className="absolute z-10 overflow-hidden rounded-[14px] bg-black p-[0.9%] transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+          style={open ? ZOOM_SCREEN : SCREEN}
+        >
+          {booting && (
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 z-10 animate-blink bg-[repeating-linear-gradient(0deg,rgba(255,255,255,0.35)_0_2px,rgba(0,0,0,0.9)_2px_5px)]"
+            />
+          )}
+          {open ? (
+            <div
+              className={`flex h-full flex-col transition-opacity duration-300 ${
+                booting ? 'opacity-0' : 'opacity-100'
+              }`}
+            >
+              <a
+                className="block truncate bg-[#141312] px-2 py-1 text-center font-mono text-[0.6rem] tracking-[0.08em] text-white/60 no-underline hover:text-success"
+                href={open.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => capture('team_site_clicked', { host: open.host })}
+              >
+                {open.host} ↗
+              </a>
+              {open.external ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+                  <p className="font-mono text-[0.6rem] tracking-[0.15em] text-white/50 uppercase">
+                    404 · {t('página no encontrada', 'page not found')}
+                  </p>
+                  <p className="max-w-[34ch] text-[clamp(0.85rem,1.6vw,1.1rem)] leading-[1.3] text-white">
+                    {t(
+                      'Gonzalo todavía no tiene página. Está ocupado haciendo que las de los demás funcionen.',
+                      "Gonzalo doesn't have a page yet. He's busy making everyone else's work.",
+                    )}
+                  </p>
+                  <p className="font-mono text-[0.7rem] text-success">
+                    {t('página en construcción', 'page under construction')}
+                    <span className="animate-blink">_</span>
+                  </p>
+                </div>
+              ) : (
+                <iframe
+                  key={open.host}
+                  className="block w-full flex-1 border-0 bg-white"
+                  src={open.url}
+                  title={`${open.name} · ${open.host}`}
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                  referrerPolicy="no-referrer"
+                />
+              )}
+            </div>
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center gap-4">
+              <img
+                className="h-[38%] w-auto [filter:invert(1)]"
+                src="/brand/head.svg"
+                alt=""
+                aria-hidden="true"
+              />
+              <p className="m-0 text-center font-mono text-[clamp(0.6rem,1.4vw,0.85rem)] tracking-[0.15em] text-success uppercase">
+                {t('el equipo', 'the team')}
+                <span className="animate-blink">_</span>
+              </p>
+            </div>
+          )}
+        </div>
+        <img
+          className="pointer-events-none relative block h-full w-auto select-none transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+          style={open ? ZOOM_ART : undefined}
+          src="/brand/computer.webp"
+          alt=""
+          width={1448}
+          height={1086}
+          loading="lazy"
+          decoding="async"
+        />
+        </div>
+      </div>
+
       <ul className="m-0 grid list-none grid-cols-4 gap-4 p-0 max-[720px]:grid-cols-2">
         {TEAM.map((p) => {
           const active = open?.host === p.host
-          const card = `group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-[6px] border border-line bg-surface p-0 text-left text-inherit no-underline transition-[border-color,box-shadow] duration-200 hover:border-line-strong hover:shadow-[0_10px_30px_color-mix(in_srgb,var(--color-ink)_8%,transparent)]`
-          const label = (
-            <>
-              <img
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                src={p.photo}
-                alt=""
-                width={320}
-                height={320}
-                loading="lazy"
-                decoding="async"
-              />
-              <span className="absolute inset-x-0 bottom-0 flex flex-col gap-[0.2rem] bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.55)_35%,rgba(0,0,0,0.88)_100%)] px-4 pt-16 pb-4 text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] max-[560px]:px-3 max-[560px]:pb-3">
-                <span className="text-[0.62rem] font-semibold tracking-[0.15em] text-white/80 uppercase">
-                  {t(p.role[0], p.role[1])}
-                </span>
-                <span className="text-[clamp(1.05rem,2vw,1.4rem)] leading-[1.15] font-semibold">
-                  {p.name}
-                </span>
-                <span className="truncate text-[0.68rem] tracking-[0.06em] text-white/80">
-                  {p.host}
-                </span>
-              </span>
-            </>
-          )
           return (
-            <li
-              key={p.host}
-              ref={(el) => {
-                if (el) tiles.current.set(p.host, el)
-                else tiles.current.delete(p.host)
-              }}
-              className={
-                active
-                  ? 'col-span-4 h-[72vh] min-h-[420px] max-[720px]:col-span-2'
-                  : 'aspect-square'
-              }
-            >
-              {active ? (
-                <div className={`${card} !cursor-default`}>
-                  <div className="flex items-center gap-[0.35rem] border-b border-line bg-subtle px-3 py-2">
-                    <button
-                      type="button"
-                      aria-label={t('Cerrar', 'Close')}
-                      className="size-3 cursor-pointer rounded-full border-0 bg-clay-500 p-0 transition-opacity hover:opacity-70"
-                      onClick={() => toggle(p)}
-                    />
-                    <span className="size-3 rounded-full bg-line-strong" />
-                    <span className="size-3 rounded-full bg-line-strong" />
-                    <span className="ml-2 min-w-0 flex-1 truncate rounded-[2px] bg-page px-2 py-[2px] text-[0.68rem] tracking-[0.06em] text-ink-3">
-                      {p.host}
-                    </span>
-                    <a
-                      className="text-[0.68rem] tracking-[0.06em] text-ink-2 no-underline hover:text-success"
-                      href={p.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => capture('team_site_clicked', { host: p.host })}
-                    >
-                      {t('abrir ↗', 'open ↗')}
-                    </a>
-                  </div>
-                  {p.external ? (
-                    <div
-                      className={`flex flex-1 flex-col items-center justify-center gap-5 bg-page px-6 text-center transition-opacity duration-300 ${
-                        settled ? 'opacity-100' : 'opacity-0'
-                      }`}
-                    >
-                      <p className="font-mono text-[0.7rem] tracking-[0.15em] text-ink-3 uppercase">
-                        404 · {t('página no encontrada', 'page not found')}
-                      </p>
-                      <p className="max-w-[34ch] text-[clamp(1.3rem,2.6vw,1.9rem)] leading-[1.25] text-ink">
-                        {t(
-                          'Gonzalo todavía no tiene página. Está ocupado haciendo que las de los demás funcionen.',
-                          "Gonzalo doesn't have a page yet. He's busy making everyone else's work.",
-                        )}
-                      </p>
-                      <p className="text-[0.95rem] text-ink-2">
-                        {t('Mientras tanto: ', 'In the meantime: ')}
-                        <a
-                          className={PROSE_LINK}
-                          href={p.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => capture('team_site_clicked', { host: p.host })}
-                        >
-                          GitHub
-                        </a>
-                        {' · '}
-                        <a
-                          className={PROSE_LINK}
-                          href="https://www.linkedin.com/in/gonzalosaavedram/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => capture('team_site_clicked', { host: p.host })}
-                        >
-                          LinkedIn
-                        </a>
-                      </p>
-                      <p className="font-mono text-[0.8rem] text-success">
-                        {t('página en construcción', 'page under construction')}
-                        <span className="animate-blink">_</span>
-                      </p>
-                    </div>
-                  ) : (
-                    <iframe
-                      className={`block w-full flex-1 border-0 bg-page transition-opacity duration-300 ${
-                        settled ? 'opacity-100' : 'opacity-0'
-                      }`}
-                      src={p.url}
-                      title={`${p.name} · ${p.host}`}
-                      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                      referrerPolicy="no-referrer"
-                    />
-                  )}
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className={card}
-                  onClick={() => {
-                    toggle(p)
-                    capture('team_site_opened', { host: p.host })
-                  }}
+            <li key={p.host} className="aspect-square">
+              <button
+                type="button"
+                aria-pressed={active}
+                className={`group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-[6px] border border-line bg-surface p-0 text-left text-inherit no-underline transition-all duration-100 ease-out ${
+                  active
+                    ? 'translate-x-[5px] translate-y-[6px] border-line-strong shadow-[inset_0_5px_12px_rgba(0,0,0,0.5)] brightness-[0.8]'
+                    : 'shadow-[5px_6px_0_var(--color-line-strong),8px_10px_18px_color-mix(in_srgb,var(--color-ink)_14%,transparent)] hover:-translate-x-[1px] hover:-translate-y-[2px] hover:border-success hover:shadow-[6px_8px_0_var(--color-success),10px_12px_22px_color-mix(in_srgb,var(--color-ink)_18%,transparent)] active:translate-x-[5px] active:translate-y-[6px] active:shadow-[inset_0_5px_12px_rgba(0,0,0,0.5)]'
+                }`}
+                onClick={(e) => pick(p, e.currentTarget)}
+              >
+                <img
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  src={p.photo}
+                  alt=""
+                  width={320}
+                  height={320}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <span
+                  aria-hidden="true"
+                  className={`absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-black/40 text-[0.55rem] text-white transition-opacity duration-150 ${
+                    active ? 'opacity-0' : 'opacity-50 group-hover:opacity-100'
+                  }`}
                 >
-                  {label}
-                </button>
-              )}
+                  ▶
+                </span>
+                <span className="absolute inset-x-0 bottom-0 flex flex-col gap-[0.2rem] bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.55)_35%,rgba(0,0,0,0.88)_100%)] px-4 pt-16 pb-4 text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] max-[560px]:px-3 max-[560px]:pb-3">
+                  <span className="text-[0.62rem] font-semibold tracking-[0.15em] text-white/80 uppercase">
+                    {t(p.role[0], p.role[1])}
+                  </span>
+                  <span className="text-[clamp(1.05rem,2vw,1.4rem)] leading-[1.15] font-semibold">
+                    {p.name}
+                  </span>
+                  <span className="truncate text-[0.68rem] tracking-[0.06em] text-white/80">
+                    {p.host}
+                  </span>
+                </span>
+              </button>
             </li>
           )
         })}
