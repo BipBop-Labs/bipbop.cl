@@ -541,15 +541,15 @@ export const TEAM = [
 
 type Person = (typeof TEAM)[number]
 
-// Screen hole and tape-bay position, measured from public/brand/computer.webp.
-const SCREEN = { left: '19.5%', top: '14.4%', width: '42.8%', height: '40.7%' }
-// Picking someone zooms the machine art in on its own screen (2.2x about the
-// screen's centre, 1.6x); the content rect is where the hole lands after that.
-const ZOOM_ART = {
-  transform: 'translate(9.1%, 15.3%) scale(1.6)',
-  transformOrigin: '40.9% 34.7%',
-}
-const ZOOM_SCREEN = { left: '15.8%', top: '17.5%', width: '68.5%', height: '65%' }
+// Screen hole in public/brand/computer.webp, as a share of the whole image.
+const SCREEN = 'top-[14.4%] left-[19.5%] h-[40.7%] w-[42.8%]'
+// Picking someone zooms the art in on its own screen, about the screen's
+// centre — 1.6x, and 2.4x on phones, where cropping the case buys legibility.
+const ZOOM_ART =
+  'origin-[40.9%_34.7%] translate-x-[9.1%] translate-y-[15.3%] scale-[1.6] max-[720px]:scale-[2.4]'
+// Where the hole lands after that zoom, a hair oversized to hide its rim.
+const ZOOM_SCREEN =
+  'top-[17.5%] left-[15.8%] h-[65%] w-[68.5%] max-[720px]:top-[1.2%] max-[720px]:left-[-1.4%] max-[720px]:h-[97.6%] max-[720px]:w-[102.7%]'
 /**
  * A retro machine shows the selected person's site on its screen; the tiles
  * below stay put and only get a "loaded" marker, so nothing shifts underfoot.
@@ -593,8 +593,9 @@ function Team() {
       <div className="mb-10 flex h-[min(66vw,620px)] items-center justify-center max-[720px]:-mx-5 max-[720px]:mb-6 max-[720px]:h-[82vw]">
         <div ref={machine} className="relative h-full overflow-hidden">
         <div
-          className="absolute z-10 overflow-hidden rounded-[14px] bg-black p-[0.9%] transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
-          style={open ? ZOOM_SCREEN : SCREEN}
+          className={`absolute z-10 overflow-hidden rounded-[14px] bg-black p-[0.9%] transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+            open ? ZOOM_SCREEN : SCREEN
+          }`}
         >
           {booting && (
             <span
@@ -660,8 +661,9 @@ function Team() {
           )}
         </div>
         <img
-          className="pointer-events-none relative block h-full w-auto select-none transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
-          style={open ? ZOOM_ART : undefined}
+          className={`pointer-events-none relative block h-full w-auto select-none transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+            open ? ZOOM_ART : ''
+          }`}
           src="/brand/computer.webp"
           alt=""
           width={1448}
@@ -682,8 +684,8 @@ function Team() {
                 aria-pressed={active}
                 className={`group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-[6px] border border-line bg-surface p-0 text-left text-inherit no-underline transition-all duration-100 ease-out ${
                   active
-                    ? 'translate-x-[5px] translate-y-[6px] border-line-strong shadow-[inset_0_5px_12px_rgba(0,0,0,0.5)] brightness-[0.8]'
-                    : 'shadow-[5px_6px_0_var(--color-line-strong),8px_10px_18px_color-mix(in_srgb,var(--color-ink)_14%,transparent)] hover:-translate-x-[1px] hover:-translate-y-[2px] hover:border-success hover:shadow-[6px_8px_0_var(--color-success),10px_12px_22px_color-mix(in_srgb,var(--color-ink)_18%,transparent)] active:translate-x-[5px] active:translate-y-[6px] active:shadow-[inset_0_5px_12px_rgba(0,0,0,0.5)]'
+                    ? 'translate-x-[5px] translate-y-[6px] border-success shadow-[inset_0_0_0_2px_var(--color-success),inset_0_6px_16px_rgba(0,0,0,0.6)] brightness-[0.72]'
+                    : `${open ? 'opacity-55 saturate-50' : ''} shadow-[5px_6px_0_var(--color-line-strong),8px_10px_18px_color-mix(in_srgb,var(--color-ink)_14%,transparent)] hover:-translate-x-[1px] hover:-translate-y-[2px] hover:border-success hover:shadow-[6px_8px_0_var(--color-success),10px_12px_22px_color-mix(in_srgb,var(--color-ink)_18%,transparent)] active:translate-x-[5px] active:translate-y-[6px] active:shadow-[inset_0_5px_12px_rgba(0,0,0,0.5)]`
                 }`}
                 onClick={() => pick(p)}
               >
@@ -698,8 +700,10 @@ function Team() {
                 />
                 <span
                   aria-hidden="true"
-                  className={`absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-black/40 text-[0.55rem] text-white transition-opacity duration-150 ${
-                    active ? 'opacity-0' : 'opacity-50 group-hover:opacity-100'
+                  className={`absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full text-[0.55rem] transition-all duration-150 ${
+                    active
+                      ? 'bg-success text-white shadow-[0_0_12px_3px_color-mix(in_srgb,var(--color-success)_70%,transparent)]'
+                      : 'bg-black/40 text-white opacity-50 group-hover:opacity-100'
                   }`}
                 >
                   ▶
