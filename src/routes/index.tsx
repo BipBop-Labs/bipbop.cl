@@ -11,6 +11,7 @@ import {
   MUNICIPIOS_TEXTO,
 } from '#/data/municipios'
 import { useLang, useT } from '#/lib/lang'
+import type { Repo } from '#/server/repos'
 
 const DESCRIPTION =
   'Estudio de software e inteligencia artificial en Santiago, Chile. Desarrollamos Revi junto a la Cámara Chilena de la Construcción. Software hecho con cariño, pensado contigo y construido a tu lado.'
@@ -125,6 +126,8 @@ function Home() {
           <About />
 
           <Team />
+
+          <OpenSource />
 
           <Contact />
 
@@ -723,6 +726,128 @@ function Team() {
             </li>
           )
         })}
+      </ul>
+    </section>
+  )
+}
+
+const LANG_DOT: Record<string, string> = {
+  TypeScript: 'bg-[#3178c6]',
+  Python: 'bg-[#f7c948]',
+  JavaScript: 'bg-[#f7df1e]',
+  Go: 'bg-[#00add8]',
+  Rust: 'bg-[#dea584]',
+}
+
+/** Nuestros repos públicos, tal como los cuenta GitHub, cada uno con su gente. */
+function OpenSource() {
+  const t = useT()
+  const [repos, setRepos] = useState<Array<Repo> | null>(null)
+
+  useEffect(() => {
+    fetch('/api/repos')
+      .then((r) => r.json() as Promise<{ repos: Array<Repo> }>)
+      .then((data) => setRepos(data.repos))
+      .catch(() => setRepos([]))
+  }, [])
+
+  // Sin repos que mostrar la sección sobra: mejor nada que un hueco.
+  if (repos?.length === 0) return null
+
+  return (
+    <section className="mb-20 scroll-mt-8 max-[560px]:mb-14" id="open-source">
+      <h2 className={SECTION_HEAD}>
+        <span>{t('Código abierto', 'Open source')}</span>
+      </h2>
+
+      <p className="mb-8 max-w-[52ch] text-[0.95rem] leading-[1.6] text-balance text-ink-2">
+        {t(
+          'Las herramientas que armamos para nuestro propio trabajo quedan públicas en GitHub.',
+          'The tools we build for our own work end up public on GitHub.',
+        )}
+      </p>
+
+      <ul className="m-0 grid list-none grid-cols-2 gap-4 p-0 max-[720px]:grid-cols-1">
+        {repos === null
+          ? Array.from({ length: 4 }, (_, i) => (
+              <li
+                key={i}
+                aria-hidden="true"
+                className="h-[9.5rem] animate-pulse rounded-[6px] border border-line bg-surface"
+              />
+            ))
+          : repos.map((repo) => (
+              <li key={repo.name}>
+                <a
+                  className="group flex h-full flex-col gap-3 rounded-[6px] border border-line bg-surface p-5 no-underline shadow-[4px_5px_0_var(--color-line-strong)] transition-all duration-150 ease-out hover:-translate-x-[1px] hover:-translate-y-[2px] hover:border-success hover:shadow-[5px_7px_0_var(--color-success)]"
+                  href={repo.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => capture('repo_clicked', { repo: repo.name })}
+                >
+                  <span className="flex items-baseline gap-2 font-mono text-[0.95rem] text-ink">
+                    <span aria-hidden="true" className="text-ink-3">
+                      /
+                    </span>
+                    <span className="font-semibold group-hover:text-success">
+                      {repo.name}
+                    </span>
+                    {repo.fork && (
+                      <span className="text-[0.6rem] tracking-[0.12em] text-ink-3 uppercase">
+                        fork
+                      </span>
+                    )}
+                    <span
+                      aria-hidden="true"
+                      className="ml-auto text-ink-3 transition-transform duration-150 group-hover:-translate-y-[2px] group-hover:translate-x-[2px] group-hover:text-success"
+                    >
+                      ↗
+                    </span>
+                  </span>
+
+                  <span className="flex-1 text-[0.85rem] leading-[1.5] text-ink-2">
+                    {repo.description ??
+                      t('Sin descripción todavía.', 'No description yet.')}
+                  </span>
+
+                  <span className="flex items-center gap-3 border-t border-dashed border-line pt-3 text-[0.68rem] tracking-[0.06em] text-ink-3">
+                    {repo.language && (
+                      <span className="flex items-center gap-[0.4rem]">
+                        <span
+                          aria-hidden="true"
+                          className={`size-2 rounded-full ${LANG_DOT[repo.language] ?? 'bg-ink-3'}`}
+                        />
+                        {repo.language}
+                      </span>
+                    )}
+                    {repo.stars > 0 && (
+                      <span
+                        className="flex items-center gap-[0.3rem]"
+                        title={t('estrellas en GitHub', 'stars on GitHub')}
+                      >
+                        <span aria-hidden="true">★</span>
+                        {repo.stars}
+                      </span>
+                    )}
+                    <span className="ml-auto flex -space-x-2">
+                      {repo.contributors.map((login) => (
+                        <img
+                          key={login}
+                          className="size-6 rounded-full border-2 border-surface bg-surface"
+                          src={`https://github.com/${login}.png?size=48`}
+                          alt={login}
+                          title={login}
+                          width={24}
+                          height={24}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ))}
+                    </span>
+                  </span>
+                </a>
+              </li>
+            ))}
       </ul>
     </section>
   )
