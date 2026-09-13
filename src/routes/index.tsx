@@ -17,6 +17,33 @@ const DESCRIPTION =
   'Estudio de software e inteligencia artificial en Santiago, Chile. Desarrollamos Revi junto a la Cámara Chilena de la Construcción. Software hecho con cariño, pensado contigo y construido a tu lado.'
 const TITLE = 'BipBop Labs · Estudio de software e IA a medida en Chile'
 
+export const HOME_IMAGES = {
+  skyline: {
+    src: '/brand/skyline-1920.webp',
+    srcSet:
+      '/brand/skyline-960.webp 960w, /brand/skyline-1440.webp 1440w, /brand/skyline-1920.webp 1920w, /brand/skyline-2560.webp 2560w, /brand/skyline.webp 3832w',
+    sizes: '(max-width: 720px) 380vw, 140vw',
+    loading: 'eager',
+    fetchPriority: 'high',
+  },
+  computer: {
+    src: '/brand/computer-768.webp',
+    srcSet:
+      '/brand/computer-480.webp 480w, /brand/computer-768.webp 768w, /brand/computer-1024.webp 1024w, /brand/computer.webp 1448w',
+    sizes: '(max-width: 720px) 109.333vw, 827px',
+    loading: 'eager',
+    fetchPriority: 'low',
+  },
+  machine: {
+    src: '/brand/machine-240.webp',
+    srcSet:
+      '/brand/machine-240.webp 240w, /brand/machine-480.webp 480w, /brand/machine.webp 776w',
+    sizes: 'clamp(220px, 22vw, 360px)',
+    loading: 'lazy',
+    fetchPriority: 'low',
+  },
+} as const
+
 export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
@@ -90,8 +117,11 @@ function Home() {
         <div className="relative">
           <img
             className="pointer-events-none absolute top-0 right-[calc(((100vw-100%)/-2)+0.5rem)] z-[1] block h-auto w-[clamp(220px,22vw,360px)] opacity-45 mix-blend-multiply max-[1100px]:hidden"
-            src="/brand/machine.webp"
-            loading="lazy"
+            src={HOME_IMAGES.machine.src}
+            srcSet={HOME_IMAGES.machine.srcSet}
+            sizes={HOME_IMAGES.machine.sizes}
+            loading={HOME_IMAGES.machine.loading}
+            fetchPriority={HOME_IMAGES.machine.fetchPriority}
             decoding="async"
             alt=""
             aria-hidden="true"
@@ -183,7 +213,21 @@ function Hero() {
     '[text-shadow:0_0_14px_var(--color-page),0_0_4px_var(--color-page)]'
 
   return (
-    <section className="hero-skyline relative mb-0 flex min-h-screen flex-col items-center justify-center pb-8 text-center [&>*]:relative [&>*]:z-[2]">
+    <section className="relative mb-0 flex min-h-screen flex-col items-center justify-center pb-8 text-center [&>*]:relative [&>*]:z-[2]">
+      <picture className="hero-skyline-art !absolute !z-0" aria-hidden="true">
+        <img
+          className="block h-auto w-full"
+          src={HOME_IMAGES.skyline.src}
+          srcSet={HOME_IMAGES.skyline.srcSet}
+          sizes={HOME_IMAGES.skyline.sizes}
+          width={3832}
+          height={826}
+          alt=""
+          fetchPriority={HOME_IMAGES.skyline.fetchPriority}
+          loading={HOME_IMAGES.skyline.loading}
+          decoding="async"
+        />
+      </picture>
       <Wordmark />
 
       <h1
@@ -233,8 +277,11 @@ function ReviCard() {
       <div className="relative">
         <img
           className="block h-auto w-full"
-          src="/brand/projects/revi/banner.png"
+          src="/brand/projects/revi/banner.webp"
           alt="Revi, permisos de edificación impulsados con inteligencia artificial"
+          width={1441}
+          height={454}
+          decoding="async"
         />
         <div className={BANNER_SHADE} />
       </div>
@@ -667,11 +714,14 @@ function Team() {
           className={`pointer-events-none relative block h-full w-auto select-none transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
             open ? ZOOM_ART : ''
           }`}
-          src="/brand/computer.webp"
+          src={HOME_IMAGES.computer.src}
+          srcSet={HOME_IMAGES.computer.srcSet}
+          sizes={HOME_IMAGES.computer.sizes}
           alt=""
           width={1448}
           height={1086}
-          loading="lazy"
+          loading={HOME_IMAGES.computer.loading}
+          fetchPriority={HOME_IMAGES.computer.fetchPriority}
           decoding="async"
         />
         </div>
@@ -698,7 +748,8 @@ function Team() {
                   alt=""
                   width={320}
                   height={320}
-                  loading="lazy"
+                  loading="eager"
+                  fetchPriority="low"
                   decoding="async"
                 />
                 <span

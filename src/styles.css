@@ -203,20 +203,18 @@
 }
 
 /*
- * Bits that no utility can express: the pseudo-element decorations, the
- * skyline wash behind the hero, and the masked arrow on the contact link.
+ * Bits that no utility can express: the skyline wash behind the hero and the
+ * masked arrow on the contact link.
  */
 @layer components {
-  /* hero skyline wash */
-  .hero-skyline::before {
-    content: '';
+  /* SSR-visible hero skyline wash */
+  .hero-skyline-art {
     position: absolute;
     left: 50%;
     bottom: 2rem;
     transform: translateX(-50%);
     width: 140vw;
     aspect-ratio: 1916 / 413;
-    background: url('/brand/skyline.webp') no-repeat bottom center / 100% 100%;
     -webkit-mask-image: linear-gradient(
       to bottom,
       black 0%,
@@ -235,10 +233,8 @@
   }
 
   @media (max-width: 720px) {
-    .hero-skyline::before {
+    .hero-skyline-art {
       width: 380vw;
-      background-size: 100% 100%;
-      background-position: bottom center;
     }
   }
 
